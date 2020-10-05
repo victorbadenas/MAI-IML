@@ -29,7 +29,7 @@ print("weight: ", weight)
 # 4. Uncomment the code and answer: What happens with this line?
 # bmi = weight / height ** 2
 
-# error because __pow__ is not defined in the list object as it is in numpy
+"""error because __pow__ is not defined in the list object as it is in numpy"""
 
 # 5. Convert height and weight into two numpy arrays,
 #  called np_height and np_weight, respectively
@@ -46,7 +46,7 @@ print(f"mean(bmi): {np.mean(bmi)}")
 # 9. Compute the median  of the bmi and print on the console
 print(f"median(bmi): {np.median(bmi)}")
 # 10. Compute the correlation between height and weight
-print(f"correlate(height, np_weight): {np.correlate(np_height, np_weight)}")
+print(f"correlate(height, np_weight): {np.corrcoef(np_height.T, np_weight)}")
 # 11. Compute the standard deviation of bmi
 print(f"std(bmi): {np.std(bmi)}")
 # 12. Show on console the dimension of bmi, height and weight
@@ -61,7 +61,7 @@ print(f"sorted(bmi): {sorted(bmi)}")
 # Think about it before uncomment the code and run it to look at the results
 print(height + weight)
 print (np_height + np_weight)
-# no, __add__ for lists appends the values of the second list onto the first and in numpy it adds the values item by item
+"""no, __add__ for lists appends the values of the second list onto the first and in numpy it adds the values item by item"""
 
 # 14. Create a 2 dimensional array, called np_table,
 # in one dimension the values of the height and
