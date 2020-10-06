@@ -1,4 +1,6 @@
 import argparse
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 from dataset import ArffFile
 from pathlib import Path
 
@@ -15,7 +17,6 @@ class Main:
     def __call__(self):
         arffFilesPaths = list(self.args.arffFolder.glob("*.arff"))
         arffFilesData = [ArffFile(arffFilePath) for arffFilePath in arffFilesPaths]
-
 
 if __name__ == "__main__":
     args = parseArguments()
