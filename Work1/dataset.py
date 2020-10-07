@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.io.arff import loadarff
 from utils import bytesToString
+from collections import Counter
+from sklearn.preprocessing import scale, StandardScaler, MinMaxScaler, Normalizer, LabelEncoder
 
 
 class ArffFile:
@@ -24,12 +26,12 @@ class ArffFile:
     def __init__(self, arffPath):
         self.path = arffPath
         data, self.metaData = loadarff(arffPath)
-        self.maps = {}
+        self.labelEncoders = {}
         self.formatDataFrame(data)
 
     def formatDataFrame(self, arffData):
         self.data = pd.DataFrame(arffData)
-        self.data = self.data.applymap(bytesToString) # apply type conversiion to all items in DataFrame
+        self.data = self.data.applymap(bytesToString) # apply type conversion to all items in DataFrame
         self.formatColumns()
 
     def scatterPlot(self, **kwargs):
@@ -46,30 +48,41 @@ class ArffFile:
         for column in self.data.columns:
             if self.data[column].dtype.kind == 'O':
                 self.data[column] = self.convertStringsToInt(column, self.data[column])
-            elif self.data[column].dtype.kind == 'f':
-                self.data[column] = self.normalizeFloatColumn(self.data[column])
+            self.data[column] = self.normalizeFloatColumn(self.data[column], type="min-max")
 
-    def convertStringsToInt(self, column, column_data):
-        columnMap = self.createMap(column, column_data)
-        self.maps[column] = columnMap
-        column_data = column_data.apply(lambda x: columnMap[x]/columnMap['max_range'] if x!= '?' else x)
-        column_data[column_data == '?'] = np.mean(column_data[column_data != '?'])
-        return column_data
+    def convertStringsToInt(self, column, columnData):
+        columnData[columnData == '?'] = Counter(columnData).most_common()[0][0]
+        columnDataLabels = np.unique(columnData)
+        self.labelEncoders[column] = LabelEncoder()
+        self.labelEncoders[column].fit(columnDataLabels)
+        columnData = self.labelEncoders[column].transform(columnData)
+        return columnData
 
     @staticmethod
-    def normalizeFloatColumn(data):
-        return data / max(data)
+    def replaceQuestionMarksWithValue(column_data, type='mean'):
+        if type == 'mean':
+            column_data[column_data == '?'] = np.mean(column_data[column_data != '?'])
+        elif type == 'median':
+            column_data[column_data == '?'] = np.median(column_data[column_data != '?'])
+        else:
+            raise ValueError(f"type {type} not supported")
 
-    def createMap(self, column, columnData):
-        columnData = set(columnData)
-        if '?' in columnData:
-            columnData.remove('?')
-        columnData = sorted(columnData)
-        max_range = len(columnData) - 1
-        int_labels = list(range(len(columnData)))
-        map_ = dict(zip(columnData, int_labels))
-        map_["max_range"] = max_range
-        return map_
+    @staticmethod
+    def normalizeFloatColumn(data, type="min-max"):
+        if type == "stardardisation":
+            return scale(data)
+        elif type == "mean":
+            scaler = StandardScaler()
+        elif type == "min-max":
+            scaler = MinMaxScaler()
+        elif type == "unit":
+            scaler = Normalizer()
+        else:
+            raise ValueError(f"{type} normalization type not supported")
+        data = np.array(data).reshape(-1, 1)
+        scaler.fit(data)
+        data = scaler.transform(data)
+        return pd.Series(data.reshape(-1))
 
     def getData(self):
         return self.data
@@ -78,7 +91,7 @@ class ArffFile:
         return self.metaData
 
     def getStringMapData(self):
-        return self.maps
+        return self.labelEncoders
 
 if __name__ == "__main__":
     arffFile = ArffFile(Path("./datasets/adult.arff"))
