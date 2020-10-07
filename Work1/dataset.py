@@ -22,7 +22,6 @@ class ArffFile:
 
     """
     def __init__(self, arffPath):
-        super(ArffFile, self).__init__()
         self.path = arffPath
         data, self.metaData = loadarff(arffPath)
         self.maps = {}
@@ -30,12 +29,17 @@ class ArffFile:
 
     def formatDataFrame(self, arffData):
         self.data = pd.DataFrame(arffData)
-        self.data = self.data.applymap(bytesToString)
+        self.data = self.data.applymap(bytesToString) # apply type conversiion to all items in DataFrame
         self.formatColumns()
 
     def scatterPlot(self, **kwargs):
-        plt.figure(figsize=(15,15))
-        pd.plotting.scatter_matrix(self.data, **kwargs)
+        axes = pd.plotting.scatter_matrix(self.data, **kwargs)
+        for ax in axes.flatten():
+            ax.xaxis.label.set_rotation(90)
+            ax.yaxis.label.set_rotation(0)
+            ax.yaxis.label.set_ha('right')
+        plt.tight_layout()
+        plt.gcf().subplots_adjust(wspace=0, hspace=0)
         plt.show()
 
     def formatColumns(self):
@@ -79,3 +83,4 @@ class ArffFile:
 if __name__ == "__main__":
     arffFile = ArffFile(Path("./datasets/adult.arff"))
     print(arffFile.getData().head())
+    arffFile.scatterPlot(figsize=(10, 10))
