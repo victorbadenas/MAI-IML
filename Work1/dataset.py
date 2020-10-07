@@ -51,7 +51,7 @@ class ArffFile:
             self.data[column] = self.normalizeFloatColumn(self.data[column], type="min-max")
 
     def convertStringsToInt(self, column, columnData):
-        columnData[columnData == '?'] = Counter(columnData).most_common()[0][0]
+        columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
         columnDataLabels = np.unique(columnData)
         self.labelEncoders[column] = LabelEncoder()
         self.labelEncoders[column].fit(columnDataLabels)
