@@ -20,7 +20,7 @@ class Main:
         print(self.args.arffFilesPaths)
         arffFile = ArffFile(self.args.arffFilesPaths[1])
         print(arffFile.getData())
-        arffFile.scatterPlot(figsize=(10, 10))
+        # arffFile.scatterPlot(figsize=(10, 10))
         # clustering = DBSCAN(n_jobs=-1)
         # labels = clustering.fit_predict(arffFile.getData())
         # print(labels)

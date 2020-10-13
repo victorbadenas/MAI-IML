@@ -48,10 +48,11 @@ class ArffFile:
 
     def formatColumns(self):
         for column in self.data.columns:
-            if self.data[column].dtype.kind == 'O':
-                self.data[column] = self.convertStrings(column, self.data[column])
-            elif self.data[column].dtype.kind == 'f':
-                self.data[column] = self.normalizeFloatColumn(self.data[column], type=self.floatNormalization)
+            columnData = self.data[column].copy()
+            if columnData.dtype.kind == 'O':
+                self.data[column] = self.convertStrings(column, columnData)
+            elif columnData.dtype.kind == 'f':
+                self.data[column] = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
 
     def convertStrings(self, column, columnData):
         if self.stringConversion == 'int':
