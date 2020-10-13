@@ -20,7 +20,7 @@ class ArffFile:
         path: path to arff file
         data: pd.DataFrame with arff data in float values (normalised in range [0, 1])
         metaData: arff metadata information
-        maps: dictionary with mapping information from string to int
+        maps: dictionary with mapping information from string to int or OneHotVector
 
     """
     def __init__(self, arffPath, stringConversion='int', floatNormalization="min-max"):
