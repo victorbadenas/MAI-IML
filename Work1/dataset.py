@@ -5,7 +5,7 @@ from pathlib import Path
 from scipy.io.arff import loadarff
 from utils import bytesToString
 from collections import Counter
-from sklearn.preprocessing import scale, StandardScaler, MinMaxScaler, Normalizer, LabelEncoder
+from sklearn.preprocessing import scale, StandardScaler, MinMaxScaler, Normalizer, LabelEncoder, OneHotEncoder
 
 
 class ArffFile:
@@ -23,8 +23,10 @@ class ArffFile:
         maps: dictionary with mapping information from string to int
 
     """
-    def __init__(self, arffPath):
+    def __init__(self, arffPath, stringConversion='int', floatNormalization="min-max"):
         self.path = arffPath
+        self.stringConversion = stringConversion
+        self.floatNormalization = floatNormalization
         data, self.metaData = loadarff(arffPath)
         self.labelEncoders = {}
         self.formatDataFrame(data)
@@ -47,8 +49,19 @@ class ArffFile:
     def formatColumns(self):
         for column in self.data.columns:
             if self.data[column].dtype.kind == 'O':
-                self.data[column] = self.convertStringsToInt(column, self.data[column])
-            self.data[column] = self.normalizeFloatColumn(self.data[column], type="min-max")
+                self.data[column] = self.convertStrings(column, self.data[column])
+            elif self.data[column].dtype.kind == 'f':
+                self.data[column] = self.normalizeFloatColumn(self.data[column], type=self.floatNormalization)
+
+    def convertStrings(self, column, columnData):
+        if self.stringConversion == 'int':
+            columnData = self.convertStringsToInt(column, columnData)
+            columnData = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
+        elif self.stringConversion == 'onehot':
+            columnData = self.convertStringToOH(column, columnData)
+        else:
+            raise NotImplementedError(f"{self.stringConversion} is not a valid value for stringConversion")
+        return columnData
 
     def convertStringsToInt(self, column, columnData):
         columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
@@ -58,14 +71,19 @@ class ArffFile:
         columnData = self.labelEncoders[column].transform(columnData)
         return columnData
 
-    @staticmethod
-    def replaceQuestionMarksWithValue(column_data, type='mean'):
-        if type == 'mean':
-            column_data[column_data == '?'] = np.mean(column_data[column_data != '?'])
-        elif type == 'median':
-            column_data[column_data == '?'] = np.median(column_data[column_data != '?'])
-        else:
-            raise ValueError(f"type {type} not supported")
+    def convertStringToOH(self, column, columnData):
+        raise NotImplementedError
+        # TODO: yet to be implemented
+
+        # columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
+        # columnDataLabels = np.unique(columnData).reshape(-1, 1)
+        # onehotEncoder = OneHotEncoder()
+        # labelEncoder = LabelEncoder()
+        # integerEncoded = labelEncoder.fit_transform(columnDataLabels)
+        # integerEncoded = integerEncoded.reshape(-1, 1)
+        # onehotEncoder.fit(integerEncoded)
+        # columnData = onehotEncoder.transform()
+        # return columnData
 
     @staticmethod
     def normalizeFloatColumn(data, type="min-max"):

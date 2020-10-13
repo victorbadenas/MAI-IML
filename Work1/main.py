@@ -8,7 +8,8 @@ from sklearn.cluster import DBSCAN
 
 def parseArguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--arffFolder", type=Path, default="./datasets/")
+    # p.e. we could use adult.arff as mixed, vote.arff as nominal and waveform.arff as numerical
+    parser.add_argument("-f", "--arffFilesPaths", action='append', type=Path, required=True)
     return parser.parse_args()
 
 class Main:
@@ -16,12 +17,13 @@ class Main:
         self.args = args
 
     def __call__(self):
-        arffFilesPaths = list(self.args.arffFolder.glob("*.arff"))
-        # arffFilesData = [ArffFile(arffFilePath) for arffFilePath in arffFilesPaths]
-        arffFile = ArffFile(arffFilesPaths[0])
-        clustering = DBSCAN(n_jobs=-1)
-        labels = clustering.fit_predict(arffFile.getData())
-        print(labels)
+        print(self.args.arffFilesPaths)
+        arffFile = ArffFile(self.args.arffFilesPaths[1])
+        print(arffFile.getData())
+        arffFile.scatterPlot(figsize=(10, 10))
+        # clustering = DBSCAN(n_jobs=-1)
+        # labels = clustering.fit_predict(arffFile.getData())
+        # print(labels)
         return
 
 if __name__ == "__main__":
