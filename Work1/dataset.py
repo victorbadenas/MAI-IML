@@ -56,8 +56,7 @@ class ArffFile:
 
     def convertStrings(self, column, columnData):
         if self.stringConversion == 'int':
-            columnData = self.convertStringsToInt(column, columnData)
-            columnData = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
+            columnData = self.convertStringsToInt(column, columnData).astype(np.int)
         elif self.stringConversion == 'onehot':
             columnData = self.convertStringToOH(column, columnData)
         else:
