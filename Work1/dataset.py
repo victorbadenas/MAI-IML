@@ -36,8 +36,11 @@ class ArffFile:
         self.data = self.data.applymap(bytesToString) # apply type conversion to all items in DataFrame
         self.formatColumns()
 
-    def scatterPlot(self, **kwargs):
-        axes = pd.plotting.scatter_matrix(self.data, **kwargs)
+    def scatterPlot(self, ignoreLabel=False, **kwargs):
+        if ignoreLabel:
+            axes = pd.plotting.scatter_matrix(self.data.copy().drop('class', axis=1), **kwargs)
+        else:
+            axes = pd.plotting.scatter_matrix(self.data, **kwargs)
         for ax in axes.flatten():
             ax.xaxis.label.set_rotation(90)
             ax.yaxis.label.set_rotation(0)
