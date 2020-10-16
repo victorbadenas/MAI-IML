@@ -53,9 +53,9 @@ class ArffFile:
         for column in self.data.columns:
             columnData = self.data[column].copy()
             if columnData.dtype.kind == 'O':
-                self.data[column] = self.convertStrings(column, columnData)
-            elif columnData.dtype.kind == 'f':
-                self.data[column] = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
+                columnData = self.convertStrings(column, columnData)
+            # elif columnData.dtype.kind == 'f':
+            self.data[column] = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
 
     def convertStrings(self, column, columnData):
         if self.stringConversion == 'int':
