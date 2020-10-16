@@ -7,6 +7,10 @@ from pathlib import Path
 from sklearn.cluster import DBSCAN
 from clustering import KMeans, BisectingKMeans, KMeansPP
 from collections import Counter
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans as SKMeans
+from utils import timer
+from pprint import pprint
 
 def parseArguments():
     parser = argparse.ArgumentParser()
@@ -19,18 +23,51 @@ class Main:
         self.args = args
 
     def __call__(self):
-        print(self.args.arffFilesPaths)
-        arffFile = ArffFile(self.args.arffFilesPaths[0])
-        unsupervisedFeatures = arffFile.getData().copy().drop('class', axis=1)
-        y = arffFile.getData()['class']
-        print("number of classes=", len(np.unique(y)))
-        print(unsupervisedFeatures.head())
-        # arffFile.scatterPlot(figsize=(10, 10), ignoreLabel=True)
+        report = {}
+        for arffFilePath in self.args.arffFilesPaths:
+            accs = self.runSingleFile(arffFilePath)
+            report[str(arffFilePath)] = accs
+        return report
+
+    def runSingleFile(self, arffFilePath):
+        arffFile = ArffFile(arffFilePath)
+        unsupervisedFeatures = arffFile.getData().copy()
+        if 'class' in unsupervisedFeatures:
+            unsupervisedFeatures = unsupervisedFeatures.drop('class', axis=1)
+            y = arffFile.getData()['class']
+        elif 'Class' in unsupervisedFeatures:
+            unsupervisedFeatures = unsupervisedFeatures.drop('Class', axis=1)
+            y = arffFile.getData()['Class']
+        else:
+            raise ValueError
+        numOfClasses = len(np.unique(y))
+        _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
+        _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
+        return slacc, ouracc
+
+    @timer(print_=True)
+    def sklearnKMeans(self, data, y, numOfClasses):
+        clustering = SKMeans(n_clusters=numOfClasses, init='random')
+        labels = clustering.fit_predict(data)
+        acc = np.sum(labels == y)*100.0/len(labels)
+        # print(f"accuracy: {acc}")
+        return labels, acc
+
+    @timer(print_=True)
+    def ourKMeans(self, data, y, numOfClasses):
+        clustering = KMeans(numberOfClusters=numOfClasses, maxIterations=300)
+        labels = clustering.fitPredict(data, y=y)
+        acc = np.sum(labels == y)*100.0/len(labels)
+        # print(f"accuracy: {acc}")
+        return labels, acc
+
+    def runDBSCAN(self, data):
         clustering = DBSCAN(n_jobs=-1, eps=.75)
-        labels = clustering.fit_predict(unsupervisedFeatures)
+        labels = clustering.fit_predict(data)
         print(np.unique(labels))
         print(Counter(labels))
 
 if __name__ == "__main__":
     args = parseArguments()
-    Main(args)()
+    report = Main(args)()
+    pprint(report)
