@@ -1,4 +1,3 @@
-import tqdm
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
@@ -12,15 +11,16 @@ def l2dist(points, center, axis=0):
     return np.sqrt(dist)
 
 class KMeans:
-    def __init__(self, n_clusters=8, *, distanceType='euclidean', max_iter=500,
+    def __init__(self, n_clusters=8, *, distanceType='euclidean', init='random', max_iter=500,
                  tol=1e-4, verbose=False):
         self.numberOfClusters = n_clusters
         self.distanceType = distanceType
         self.maxIterations = int(max_iter)
         self.maxStopDistance = tol
         self.verbose = verbose
+        self.init = init
         self.centers = None
-        self.accuracy = []
+        self.inertias_ = []
 
     def fit(self, trainData, y=None):
         trainData = self._convertToNumpy(trainData)
@@ -30,8 +30,10 @@ class KMeans:
             previousLabels, previousCenters = clusterLabels, self.centers.copy()
             clusterLabels = self._predictClusters(trainData)
             self._updateCenters(trainData, clusterLabels)
-            if self.verbose and y is not None:
-                self.accuracy.append(np.sum(clusterLabels == y)/len(y))
+            self.inertias_.append(self._computeInertia(trainData, clusterLabels))
+
+            if self.verbose:
+                print(f"Iteration {iterationIdx} with inertia {self.inertias_[-1]:.2f}")
             if self._stopIteration(previousCenters, self.centers, previousLabels, clusterLabels):
                 break
 
@@ -45,8 +47,11 @@ class KMeans:
         return self._predictClusters(data)
 
     def _initializeCenters(self, data):
-        randomRowIdxs = np.random.choice(data.shape[0], self.numberOfClusters)
-        self.centers = data[randomRowIdxs]
+        if self.init == 'random':
+            randomRowIdxs = np.random.choice(data.shape[0], self.numberOfClusters)
+            self.centers = data[randomRowIdxs]
+        else:
+            self.centers = data[:self.numberOfClusters]
         if self.verbose:
             print("Initialization complete")
 
@@ -71,7 +76,7 @@ class KMeans:
 
     def _predictClusters(self, data):
         l2distances = cdist(data, self.centers, self.distanceType)
-        return np.argmax(l2distances, axis=1)
+        return np.argmin(l2distances, axis=1)
 
     def _stopIteration(self, previousCentroids, newCentroids, previousLabels, newLabels):
         return self._centroidsNotChanged(previousCentroids, newCentroids) or self._pointsInSameCluster(previousLabels, newLabels)
@@ -88,3 +93,10 @@ class KMeans:
             print(f"Classifications changed: {np.sum(previousLabels != newLabels)}/{len(previousLabels)}")
         return np.all(boolArray)
 
+    def _computeInertia(self, data, dataLabels):
+        inertia = 0.0
+        for clusterIdx in range(self.numberOfClusters):
+            clusterData = data[dataLabels == clusterIdx]
+            clusterCenter = self.centers[clusterIdx]
+            inertia += np.sum(l2dist(clusterData, clusterCenter))
+        return inertia
