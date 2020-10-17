@@ -35,9 +35,7 @@ class KMeans:
             for the initial centroids.
 
         tol : float, default=1e-4
-            Relative tolerance with regards to Frobenius norm of the difference
-            in the cluster centers of two consecutive iterations to declare
-            convergence.
+            Maximum value tolerated to declare convergence by stability of the centers
 
         verbose : bool, default=False
             Verbosity mode.
