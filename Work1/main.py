@@ -16,6 +16,7 @@ def parseArguments():
     parser = argparse.ArgumentParser()
     # p.e. we could use adult.arff as mixed, vote.arff as nominal and waveform.arff as numerical
     parser.add_argument("-f", "--arffFilesPaths", action='append', type=Path, required=True)
+    parser.add_argument("-v", "--verbose", action='store_true', default=False)
     return parser.parse_args()
 
 class Main:
@@ -50,15 +51,13 @@ class Main:
         clustering = SKMeans(n_clusters=numOfClasses, init='random')
         labels = clustering.fit_predict(data)
         acc = np.sum(labels == y)*100.0/len(labels)
-        # print(f"accuracy: {acc}")
         return labels, acc
 
     @timer(print_=True)
     def ourKMeans(self, data, y, numOfClasses):
-        clustering = KMeans(numberOfClusters=numOfClasses, maxIterations=300)
+        clustering = KMeans(n_clusters=numOfClasses, verbose=self.args.verbose)
         labels = clustering.fitPredict(data, y=y)
         acc = np.sum(labels == y)*100.0/len(labels)
-        # print(f"accuracy: {acc}")
         return labels, acc
 
     def runDBSCAN(self, data):
