@@ -1,6 +1,7 @@
 import numpy as np
-import pandas as pd
 from scipy.spatial.distance import cdist
+from .kmeansPP import KMeansPP
+from ..utils import convertToNumpy
 """
 https://en.wikipedia.org/wiki/K-means_clustering
 """
@@ -67,7 +68,7 @@ class KMeans:
         Returns:
             self: fitted estimator
         """
-        trainData = self._convertToNumpy(trainData)
+        trainData = convertToNumpy(trainData)
         self._initializeCenters(trainData)
         clusterLabels = np.random.randint(0, high=self.numberOfClusters, size=(trainData.shape[0],))
         for iterationIdx in range(self.maxIterations):
@@ -98,7 +99,7 @@ class KMeans:
         """
         if self.centers is None:
             raise ValueError("Clusters have not been initialized, call KMeans.fit(X) first")
-        data = self._convertToNumpy(data)
+        data = convertToNumpy(data)
         if self.centers.shape[1] != data.shape[1]:
             raise ValueError(f"{data.shape} is an invalid data structure for kmeans of centers {self.centers.shape}")
         return self._predictClusters(data)
@@ -130,27 +131,12 @@ class KMeans:
             self.centers = data[randomRowIdxs]
         elif self.init == 'first':
             self.centers = data[:self.numberOfClusters]
+        elif self.init == 'k-means++':
+            self.centers = KMeansPP(self.numberOfClusters).fit(data).get_centroids()
         else:
             raise ValueError(f"Init parameter {self.init} not supported")
         if self.verbose:
             print("Initialization complete")
-
-    def _convertToNumpy(self, data):
-        """
-        Converts data to numpy if the data is an object of pd.DataFrame or a list
-        of lists. Otherwise, raise ValueError.
-        """
-        if isinstance(data, np.ndarray):
-            return data
-        elif isinstance(data, pd.DataFrame):
-            return data.to_numpy()
-        elif isinstance(data, list):
-            data = np.array(data)
-            if len(data) == 2:
-                return data
-            else:
-                raise ValueError(f"Expected a 2D list as input")
-        raise ValueError(f"type {type(data)} not supported")
 
     @staticmethod
     def _computeNewCenter(trainData, clusterLabels, clusterIdx, currentCenter):

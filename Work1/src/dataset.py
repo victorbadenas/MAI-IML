@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.io.arff import loadarff
-from utils import bytesToString
+from .utils import bytesToString
 from collections import Counter
 from sklearn.preprocessing import scale, StandardScaler, MinMaxScaler, Normalizer, LabelEncoder, OneHotEncoder
 

@@ -2,14 +2,14 @@ import argparse
 import warnings
 import numpy as np
 warnings.simplefilter(action='ignore')
-from dataset import ArffFile
+from src.dataset import ArffFile
 from pathlib import Path
 from sklearn.cluster import DBSCAN
-from clustering import KMeans, BisectingKMeans, KMeansPP
+from src.clustering import KMeans, BisectingKMeans, KMeansPP
 from collections import Counter
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans as SKMeans
-from utils import timer
+from src.utils import timer
 from pprint import pprint
 
 def parseArguments():
@@ -40,11 +40,13 @@ class Main:
             unsupervisedFeatures = unsupervisedFeatures.drop('Class', axis=1)
             y = arffFile.getData()['Class']
         else:
+            #TODO Raises error for autos.arff
             raise ValueError
         numOfClasses = len(np.unique(y))
         _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
         _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
-        return slacc, ouracc
+        _, ppacc = self.KMeansPP(unsupervisedFeatures, y, numOfClasses)
+        return slacc, ouracc, ppacc
 
     @timer(print_=True)
     def sklearnKMeans(self, data, y, numOfClasses):
@@ -56,6 +58,13 @@ class Main:
     @timer(print_=True)
     def ourKMeans(self, data, y, numOfClasses):
         clustering = KMeans(n_clusters=numOfClasses, verbose=self.args.verbose)
+        labels = clustering.fitPredict(data)
+        acc = np.sum(labels == y)*100.0/len(labels)
+        return labels, acc
+
+    @timer(print_=True)
+    def KMeansPP(self, data, y, numOfClasses):
+        clustering = KMeans(n_clusters=numOfClasses, init='k-means++', verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
         acc = np.sum(labels == y)*100.0/len(labels)
         return labels, acc
