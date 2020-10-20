@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
@@ -76,10 +77,10 @@ class KMeans:
             self.fitIteration(trainData)
             # compare best metric
             if bestMetric is None:
-                bestMetric = self.inertias_
+                bestMetric = copy.copy(self.inertias_)
                 bestCenters = self.centers.copy()
             elif bestMetric[-1] > self.inertias_[-1]:
-                bestMetric = self.inertias_
+                bestMetric = copy.copy(self.inertias_)
                 bestCenters = self.centers.copy()
         # reset
         self.reset()
