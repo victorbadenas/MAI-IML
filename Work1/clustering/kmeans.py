@@ -34,6 +34,10 @@ class KMeans:
             'first': choose the first `n_clusters` observations (rows) from data
             for the initial centroids.
 
+        n_init : int, default=10
+            Number of time the algorithm will run with different
+            centroid seeds. The best result in terms of inertia will be preserved
+
         tol : float, default=1e-4
             Maximum value tolerated to declare convergence by stability of the centers
 
@@ -41,14 +45,14 @@ class KMeans:
             Verbosity mode.
 
     """
-    def __init__(self, n_clusters=8, *, init='random', max_iter=500, tol=1e-4, verbose=False):
+    def __init__(self, n_clusters=8, *, init='random', n_init=10, max_iter=500, tol=1e-4, verbose=False):
         self.numberOfClusters = n_clusters
         self.maxIterations = int(max_iter)
         self.maxStopDistance = tol
         self.verbose = verbose
         self.init = init
-        self.centers = None
-        self.inertias_ = []
+        self.nInit = n_init
+        self.reset()
 
     """
     Main call functions for the algorithm:
@@ -57,7 +61,33 @@ class KMeans:
     - fitPredict: realizes the two functions above for the same dataset and returns the labels
     """
 
+    def reset(self):
+        self.centers = None
+        self.inertias_ = []
+
     def fit(self, trainData):
+        # initialize best metric
+        bestMetric = None
+        # initialize best centers
+        bestCenters = None
+        for _ in range(self.nInit):
+            self.reset()
+            # run fitIteration
+            self.fitIteration(trainData)
+            # compare best metric
+            if bestMetric is None:
+                bestMetric = self.inertias_
+                bestCenters = self.centers.copy()
+            elif bestMetric[-1] > self.inertias_[-1]:
+                bestMetric = self.inertias_
+                bestCenters = self.centers.copy()
+        # reset
+        self.reset()
+        # assign best stored centers and metric
+        self.inertias_, self.centers = bestMetric, bestCenters
+        return self
+
+    def fitIteration(self, trainData):
         """Compute kmeans centroids for trainData.
         
         Parameters:
@@ -79,7 +109,6 @@ class KMeans:
                 print(f"Iteration {iterationIdx} with inertia {self.inertias_[-1]:.2f}")
             if self._stopIteration(previousCenters, self.centers, previousLabels, clusterLabels):
                 break
-        return self
 
     def predict(self, data):
         """Compute kmeans labels for trainData given previously computed centroids.
