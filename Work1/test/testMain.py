@@ -10,13 +10,16 @@ def defaultTestArguments():
         Path("./datasets/vote.arff"),
         Path("./datasets/waveform.arff")
     ]
+    parameters.verbose = False
     return parameters
 
 class myTestCase(unittest.TestCase):
     def test_main(self):
         parameters = defaultTestArguments()
-        ret = Main(parameters)()
-        self.assertEqual(ret, None)
+        try:
+            ret = Main(parameters)()
+        except Exception as _:
+            assert False
 
 if __name__ == "__main__":
     unittest.main()

@@ -56,7 +56,7 @@ class Main:
     @timer(print_=True)
     def ourKMeans(self, data, y, numOfClasses):
         clustering = KMeans(n_clusters=numOfClasses, verbose=self.args.verbose)
-        labels = clustering.fitPredict(data, y=y)
+        labels = clustering.fitPredict(data)
         acc = np.sum(labels == y)*100.0/len(labels)
         return labels, acc
 
