@@ -9,14 +9,14 @@ class BisectingKMeans:
     pass
 
 '''
-'''
+
 Input: number of clusters K, data points x1,...,x_n
 Output: K cluster centers, c_1,...,c_k 
 1. Pick a cluster to split.
 2. Find 2 sub-clusters using the basic k-Means algorithm (Bisecting step)
 3. Repeat step 2, the bisecting step, for ITER times and take the split that produces the clustering with the highest overall similarity.
 4. Repeat steps 1, 2 and 3 until the desired number of clusters is reached.
-'''
+
 import numpy as np
 from .kmeans import KMeans
 
