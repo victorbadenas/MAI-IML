@@ -51,7 +51,7 @@ class BisectingKMeans:
         cluster=[]
         cluster.append(data)
         #loop until n_cluster iteration occur
-        While len(cluster)<n_cluster:
+        While len(cluster)<n_clusters:
             #Obtainin SSE and selecting max error
             SSE_values=[]
             for x in cluster:
