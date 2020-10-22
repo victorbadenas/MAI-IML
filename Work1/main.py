@@ -46,7 +46,9 @@ class Main:
         _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
         _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
         _, ppacc = self.KMeansPP(unsupervisedFeatures, y, numOfClasses)
-        return slacc, ouracc, ppacc
+        _, bkmacc = self.BisectingKmeans(unsupervisedFeatures, y, numOfClasses)
+        return slacc, ouracc, ppacc, bkmacc
+
 
     @timer(print_=True)
     def sklearnKMeans(self, data, y, numOfClasses):
@@ -65,6 +67,13 @@ class Main:
     @timer(print_=True)
     def KMeansPP(self, data, y, numOfClasses):
         clustering = KMeans(n_clusters=numOfClasses, init='k-means++', verbose=self.args.verbose)
+        labels = clustering.fitPredict(data)
+        acc = np.sum(labels == y)*100.0/len(labels)
+        return labels, acc
+
+    @timer(print_=True)
+    def BisectingKmeans(self, data, y, numOfClasses):
+        clustering = BisectingKMeans(n_clusters=8, init='random', verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
         acc = np.sum(labels == y)*100.0/len(labels)
         return labels, acc
