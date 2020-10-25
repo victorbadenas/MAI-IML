@@ -5,7 +5,7 @@ warnings.simplefilter(action='ignore')
 from src.dataset import ArffFile
 from pathlib import Path
 from sklearn.cluster import DBSCAN
-from src.clustering import KMeans, BisectingKMeans, KMeansPP
+from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
 from collections import Counter
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans as SKMeans
@@ -46,8 +46,9 @@ class Main:
         _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
         _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
         _, ppacc = self.KMeansPP(unsupervisedFeatures, y, numOfClasses)
-        _, bkmacc = self.BisectingKmeans(unsupervisedFeatures, y, numOfClasses)
-        return slacc, ouracc, ppacc, bkmacc
+        _, bkmacc = self.bisectingKmeans(unsupervisedFeatures, y, numOfClasses)
+        _, fcmacc = self.fcm(unsupervisedFeatures, y, numOfClasses)
+        return slacc, ouracc, ppacc, bkmacc, fcmacc
 
 
     @timer(print_=True)
@@ -72,8 +73,15 @@ class Main:
         return labels, acc
 
     @timer(print_=True)
-    def BisectingKmeans(self, data, y, numOfClasses):
+    def bisectingKmeans(self, data, y, numOfClasses):
         clustering = BisectingKMeans(n_clusters=8, init='random', verbose=self.args.verbose)
+        labels = clustering.fitPredict(data)
+        acc = np.sum(labels == y)*100.0/len(labels)
+        return labels, acc
+
+    @timer(print_=True)
+    def fcm(self, data, y, numOfClasses):
+        clustering = FCM(n_clusters=8, verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
         acc = np.sum(labels == y)*100.0/len(labels)
         return labels, acc
