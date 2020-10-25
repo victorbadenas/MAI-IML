@@ -1,6 +1,6 @@
 import numpy as np
-from .kmeans import KMeans, l2dist
-from ..utils import convertToNumpy
+from .kmeans import KMeans
+from ..utils import convertToNumpy, l2norm
 from scipy.spatial.distance import cdist
 
 """
@@ -54,7 +54,7 @@ class BisectingKMeans:
 
     def _computeClusterSize(self, trainData, clusterIdx):
         clusterData = trainData[self.dataLabels == clusterIdx]
-        distances = l2dist(clusterData, self.centers[clusterIdx])
+        distances = l2norm(clusterData, self.centers[clusterIdx])
         return np.sum(distances)
 
     def _predictClusters(self, data):

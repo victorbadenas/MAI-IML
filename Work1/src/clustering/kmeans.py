@@ -2,15 +2,10 @@ import copy
 import numpy as np
 from scipy.spatial.distance import cdist
 from .kmeansPP import KMeansPP
-from ..utils import convertToNumpy
+from ..utils import convertToNumpy, l2norm
 """
 https://en.wikipedia.org/wiki/K-means_clustering
 """
-
-def l2dist(points, center, axis=0):
-    dist = (points - center)**2
-    dist = np.sum(dist, axis=1)
-    return np.sqrt(dist)
 
 class KMeans:
     """KMeans Clustering algorithm:
@@ -236,5 +231,5 @@ class KMeans:
         for clusterIdx in range(self.numberOfClusters):
             clusterData = data[dataLabels == clusterIdx]
             clusterCenter = self.centers[clusterIdx]
-            inertia += np.sum(l2dist(clusterData, clusterCenter))
+            inertia += np.sum(l2norm(clusterData, clusterCenter))
         return inertia

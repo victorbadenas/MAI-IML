@@ -37,3 +37,8 @@ def convertToNumpy(data):
         else:
             raise ValueError(f"Expected a 2D list as input")
     raise ValueError(f"type {type(data)} not supported")
+
+def l2norm(points, center, axis=0):
+    dist = (points - center)**2
+    dist = np.sum(dist, axis=1)
+    return np.sqrt(dist)
