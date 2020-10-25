@@ -1,4 +1,5 @@
 import copy
+from tqdm import tqdm
 import numpy as np
 from scipy.spatial.distance import cdist
 from ..utils import convertToNumpy
@@ -27,34 +28,56 @@ class FCM:
         self.reset()
 
     def reset(self):
-        self.currentU, self.centers = None, None
+        self.currentU = None
+        self.centers = None
+        self.labels = None
 
-    def fit(self, trainData, returnLabels=False):
+    def fit(self, trainData):
         # convert to numpy array
         trainData = convertToNumpy(trainData)
 
         # assign coefficients randomly to each data point for being in the clusters
         self.currentU = self._initUMatrix(trainData)
 
-        for iterationIdx in range(self.maxIter):
+        for _ in tqdm(range(self.maxIter)):
             previousU = copy.copy(self.currentU)
             # compute the centroid for each cluster
             self.centers = self._updateCenters(trainData)
             # compute U matrix by predicting
-            currentU = self._computeUMatrix(trainData)
+            self.currentU = self._computeUMatrix(trainData)
             if self._distanceInTolerance(self.currentU, previousU):
                 break
-        if returnLabels:
-            return np.argmax(self.currentU, axis=-1)
+
+        # set labels for training data
+        self.labels = self.getLabels(self.currentU)
 
     def predict(self, data):
         raise NotImplementedError
 
     def fitPredict(self, data):
-        return self.fit(data, returnLabels=True)
+        self.fit(data)
+        return self.labels
+
+    @staticmethod
+    def getLabels(Umatrix):
+        if Umatrix is None:
+            raise ValueError("U Matrix not set, please run fcm.FCM().fit(X) first")
+        return np.argmax(Umatrix, axis=-1)
 
     def _computeUMatrix(self, data):
-        raise NotImplementedError
+        """
+        compute Umatrix update as defined in page 30 of:
+        http://openaccess.uoc.edu/webapps/o2/bitstream/10609/59066/7/ruizjcTFG0117memoria.pdf
+
+        .. math::
+
+            u_{ij} = \frac {1}{\sum_{k=1}^{C} (\frac{d_{ij}}{d_{ik}})^{\frac{2}{m-1}}}
+        """
+        dij = cdist(data, self.centers) ** (2/(self.m-1)) # shape (nSamples, nCenters)
+        dij = dij[:, :, np.newaxis] # add dimension to perform the division for each cluster in the sumatory
+        dik = dij.repeat(self.nClusters, axis=2) # repeat for all C clusters
+        denRatio = (dij/dik) ** (2/(self.m-1)) #division through all axis
+        return 1 / np.sum(denRatio, axis=2) # sum though all clusters and inverse
 
     def _updateCenters(self, trainData):
         """
@@ -72,9 +95,9 @@ class FCM:
 
     def _distanceInTolerance(self, currentU, previousU):
         """
-        compute distance and threshold it by tolerance
+        compute norm of the difference and threshold it by tolerance
         """
-        return cdist(currentU, previousU) < self.tolerance
+        return np.linalg.norm(currentU - previousU) < self.tolerance
 
     def _initUMatrix(self, trainData):
         """

@@ -43,12 +43,13 @@ class Main:
             #TODO Raises error for autos.arff
             raise ValueError
         numOfClasses = len(np.unique(y))
-        _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
-        _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
-        _, ppacc = self.KMeansPP(unsupervisedFeatures, y, numOfClasses)
-        _, bkmacc = self.bisectingKmeans(unsupervisedFeatures, y, numOfClasses)
+        # _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
+        # _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
+        # _, ppacc = self.KMeansPP(unsupervisedFeatures, y, numOfClasses)
+        # _, bkmacc = self.bisectingKmeans(unsupervisedFeatures, y, numOfClasses)
         _, fcmacc = self.fcm(unsupervisedFeatures, y, numOfClasses)
-        return slacc, ouracc, ppacc, bkmacc, fcmacc
+        # return slacc, ouracc, ppacc, bkmacc, fcmacc
+        return .0, .0, .0, .0, fcmacc
 
 
     @timer(print_=True)
