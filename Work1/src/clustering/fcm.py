@@ -2,6 +2,7 @@ import copy
 from tqdm import tqdm
 import numpy as np
 from scipy.spatial.distance import cdist
+from numpy.linalg import norm
 from ..utils import convertToNumpy
 
 """
@@ -52,7 +53,8 @@ class FCM:
         self.labels = self.getLabels(self.currentU)
 
     def predict(self, data):
-        raise NotImplementedError
+        predictU = self._computeUMatrix(data)
+        return self.getLabels(predictU)
 
     def fitPredict(self, data):
         self.fit(data)
@@ -70,20 +72,18 @@ class FCM:
         http://openaccess.uoc.edu/webapps/o2/bitstream/10609/59066/7/ruizjcTFG0117memoria.pdf
 
         .. math::
-
             u_{ij} = \frac {1}{\sum_{k=1}^{C} (\frac{d_{ij}}{d_{ik}})^{\frac{2}{m-1}}}
         """
-        dij = cdist(data, self.centers) ** (2/(self.m-1)) # shape (nSamples, nCenters)
-        dij = dij[:, :, np.newaxis] # add dimension to perform the division for each cluster in the sumatory
-        dik = dij.repeat(self.nClusters, axis=2) # repeat for all C clusters
-        denRatio = (dij/dik) ** (2/(self.m-1)) #division through all axis
+        dij = cdist(data, self.centers) # distance of all data to all centers : shape (nSamples, nCenters)
+        dik = np.repeat(dij[:, np.newaxis, :], self.nClusters, axis=1) # repeat for all C clusters
+        denRatio = dij[:, :, np.newaxis] / dik # division through all axis
+        denRatio = denRatio  ** (2/(self.m-1)) # power
         return 1 / np.sum(denRatio, axis=2) # sum though all clusters and inverse
 
     def _updateCenters(self, trainData):
         """
         compute centers as defined in:
         .. math:: 
-        
             v_i = \frac {\sum_{k=0}^{n-1}(u_{ik})^{m}x_i}{\sum_{k=0}^{n-1}(u_{ik})^{m}}
         
         the equation is vectorixed by multiplying U**m·X and then dividing by the sum 
@@ -97,7 +97,7 @@ class FCM:
         """
         compute norm of the difference and threshold it by tolerance
         """
-        return np.linalg.norm(currentU - previousU) < self.tolerance
+        return norm(currentU - previousU) < self.tolerance
 
     def _initUMatrix(self, trainData):
         """
