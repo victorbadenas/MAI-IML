@@ -83,6 +83,7 @@ class FCM:
     def _updateCenters(self, trainData):
         """
         compute centers as defined in:
+
         .. math:: 
             v_i = \\frac {\sum_{k=0}^{n-1}(u_{ik})^{m}x_i}{\sum_{k=0}^{n-1}(u_{ik})^{m}}
         
