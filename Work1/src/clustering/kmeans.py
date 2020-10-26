@@ -170,7 +170,7 @@ class KMeans:
         as defined by:
         
         .. math::
-            c_i = \frac{1}{\left | S_{i} \right |}\sum_{x_i\in S_i}x_i
+            c_i = \\frac{1}{\left | S_{i} \\right |}\sum_{x_i\in S_i}x_i
         """
         return np.mean(trainData[clusterLabels == clusterIdx], axis=0)
 
@@ -223,7 +223,7 @@ class KMeans:
         point to the closest center (the center of the cluster where they are assigned).
 
         .. math::
-            I = \sum_{\forall point} d(point, cr)
+            I = \sum_{\\forall point} d(point, cr)
         
         where cr is the closest center to the point.
         """

@@ -11,7 +11,7 @@ Page 29
 
 - Choose a number of clusters.
 - Assign coefficients randomly to each data point for being in the clusters.
-- Repeat until the algorithm has converged (that is, the coefficients' change between two iterations is no more than {\displaystyle \varepsilon }\varepsilon , the given sensitivity threshold) :
+- Repeat until the algorithm has converged (that is, the coefficients' change between two iterations is no more than tolerance, the given sensitivity threshold) :
     - Compute the centroid for each cluster (shown below).
     - For each data point, compute its coefficients of being in the clusters.
 
@@ -71,8 +71,8 @@ class FCM:
         compute Umatrix update as defined in page 30 of:
         http://openaccess.uoc.edu/webapps/o2/bitstream/10609/59066/7/ruizjcTFG0117memoria.pdf
 
-        .. math::
-            u_{ij} = \frac {1}{\sum_{k=1}^{C} (\frac{d_{ij}}{d_{ik}})^{\frac{2}{m-1}}}
+        .. math:: 
+            u_{ij} = \\frac {1}{\sum_{k=1}^{C} (\\frac{d_{ij}}{d_{ik}})^{\\frac{2}{m-1}}}
         """
         dij = cdist(data, self.centers) # distance of all data to all centers : shape (nSamples, nCenters)
         dik = np.repeat(dij[:, np.newaxis, :], self.nClusters, axis=1) # repeat for all C clusters
@@ -84,7 +84,7 @@ class FCM:
         """
         compute centers as defined in:
         .. math:: 
-            v_i = \frac {\sum_{k=0}^{n-1}(u_{ik})^{m}x_i}{\sum_{k=0}^{n-1}(u_{ik})^{m}}
+            v_i = \\frac {\sum_{k=0}^{n-1}(u_{ik})^{m}x_i}{\sum_{k=0}^{n-1}(u_{ik})^{m}}
         
         the equation is vectorixed by multiplying U**m·X and then dividing by the sum 
         of each row of U**m.
