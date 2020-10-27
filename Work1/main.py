@@ -41,53 +41,49 @@ class Main:
         y = arffFile.getData()[labelColumn]
 
         numOfClasses = len(np.unique(y))
-        _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
-        _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
-        _, ppacc = self.kMeansPP(unsupervisedFeatures, y, numOfClasses)
-        _, bkmacc = self.bisectingKmeans(unsupervisedFeatures, y, numOfClasses)
-        _, fcmacc = self.fcm(unsupervisedFeatures, y, numOfClasses)
-        return slacc, ouracc, ppacc, bkmacc, fcmacc
+        labels = {}
+        labels["DBScan"] = self.runDBSCAN(unsupervisedFeatures)
+        labels["sklearnKMeans"] = self.sklearnKMeans(unsupervisedFeatures, numOfClasses)
+        labels["ourKMeans"] = self.ourKMeans(unsupervisedFeatures, numOfClasses)
+        labels["kMeansPP"] = self.kMeansPP(unsupervisedFeatures, numOfClasses)
+        labels["bisectingKmeans"] = self.bisectingKmeans(unsupervisedFeatures, numOfClasses)
+        labels["fcm"] = self.fcm(unsupervisedFeatures, numOfClasses)
+        return labels
 
     @timer(print_=True)
-    def sklearnKMeans(self, data, y, numOfClasses):
-        clustering = SKMeans(n_clusters=numOfClasses, init='random')
+    def sklearnKMeans(self, data, numOfClusters):
+        clustering = SKMeans(n_clusters=numOfClusters, init='random')
         labels = clustering.fit_predict(data)
-        acc = np.sum(labels == y)*100.0/len(labels)
-        return labels, acc
+        return labels
 
     @timer(print_=True)
-    def ourKMeans(self, data, y, numOfClasses):
-        clustering = KMeans(n_clusters=numOfClasses, verbose=self.args.verbose)
+    def ourKMeans(self, data, numOfClusters):
+        clustering = KMeans(n_clusters=numOfClusters, verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
-        acc = np.sum(labels == y)*100.0/len(labels)
-        return labels, acc
+        return labels
 
     @timer(print_=True)
-    def kMeansPP(self, data, y, numOfClasses):
-        clustering = KMeans(n_clusters=numOfClasses, init='k-means++', verbose=self.args.verbose)
+    def kMeansPP(self, data, numOfClusters):
+        clustering = KMeans(n_clusters=numOfClusters, init='k-means++', verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
-        acc = np.sum(labels == y)*100.0/len(labels)
-        return labels, acc
+        return labels
 
     @timer(print_=True)
-    def bisectingKmeans(self, data, y, numOfClasses):
-        clustering = BisectingKMeans(n_clusters=8, init='random', verbose=self.args.verbose)
+    def bisectingKmeans(self, data, numOfClusters):
+        clustering = BisectingKMeans(n_clusters=numOfClusters, init='random', verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
-        acc = np.sum(labels == y)*100.0/len(labels)
-        return labels, acc
+        return labels
 
     @timer(print_=True)
-    def fcm(self, data, y, numOfClasses):
-        clustering = FCM(n_clusters=8, verbose=self.args.verbose)
+    def fcm(self, data, numOfClusters):
+        clustering = FCM(n_clusters=numOfClusters, verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
-        acc = np.sum(labels == y)*100.0/len(labels)
-        return labels, acc
+        return labels
 
     def runDBSCAN(self, data):
         clustering = DBSCAN(n_jobs=-1, eps=.75)
         labels = clustering.fit_predict(data)
-        print(np.unique(labels))
-        print(Counter(labels))
+        return labels
 
 if __name__ == "__main__":
     args = parseArguments()
