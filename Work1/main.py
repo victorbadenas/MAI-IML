@@ -31,21 +31,19 @@ class Main:
         return report
 
     def runSingleFile(self, arffFilePath):
+        # load arff files
         arffFile = ArffFile(arffFilePath)
         unsupervisedFeatures = arffFile.getData().copy()
-        if 'class' in unsupervisedFeatures:
-            unsupervisedFeatures = unsupervisedFeatures.drop('class', axis=1)
-            y = arffFile.getData()['class']
-        elif 'Class' in unsupervisedFeatures:
-            unsupervisedFeatures = unsupervisedFeatures.drop('Class', axis=1)
-            y = arffFile.getData()['Class']
-        else:
-            #TODO Raises error for autos.arff
-            raise ValueError
+
+        # remove label column from training data
+        labelColumn = unsupervisedFeatures.columns[-1]
+        unsupervisedFeatures = unsupervisedFeatures.drop(labelColumn, axis=1)
+        y = arffFile.getData()[labelColumn]
+
         numOfClasses = len(np.unique(y))
         _, slacc = self.sklearnKMeans(unsupervisedFeatures, y, numOfClasses)
         _, ouracc = self.ourKMeans(unsupervisedFeatures, y, numOfClasses)
-        _, ppacc = self.KMeansPP(unsupervisedFeatures, y, numOfClasses)
+        _, ppacc = self.kMeansPP(unsupervisedFeatures, y, numOfClasses)
         _, bkmacc = self.bisectingKmeans(unsupervisedFeatures, y, numOfClasses)
         _, fcmacc = self.fcm(unsupervisedFeatures, y, numOfClasses)
         return slacc, ouracc, ppacc, bkmacc, fcmacc
@@ -65,7 +63,7 @@ class Main:
         return labels, acc
 
     @timer(print_=True)
-    def KMeansPP(self, data, y, numOfClasses):
+    def kMeansPP(self, data, y, numOfClasses):
         clustering = KMeans(n_clusters=numOfClasses, init='k-means++', verbose=self.args.verbose)
         labels = clustering.fitPredict(data)
         acc = np.sum(labels == y)*100.0/len(labels)
