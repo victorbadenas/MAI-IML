@@ -50,21 +50,27 @@ class ArffFile:
         plt.show()
 
     def formatColumns(self):
-        for column in self.data.columns:
+        columnNames = self.data.columns.to_list()
+        for column in self.data.columns[:-1].to_list():
             columnData = self.data[column].copy()
             if columnData.dtype.kind == 'O':
-                columnData = self.convertStrings(column, columnData)
-            # elif columnData.dtype.kind == 'f':
-            self.data[column] = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
+                if self.stringConversion == 'int':
+                    columnData = self.convertStringsToInt(column, columnData).astype(np.int)
+                elif self.stringConversion == 'onehot':
+                    ohDataFrame = self.convertStringToOH(column, columnData)
+                    self.data = self.data.drop(column, axis=1)
+                    columnPosition = columnNames.index(column)
+                    columnsOHDataFrame = ohDataFrame.columns.to_list()
+                    columnNames[columnPosition] = columnsOHDataFrame[0]
+                    for i in range(1, len(columnsOHDataFrame)):
+                        columnNames.insert(columnPosition + i, columnsOHDataFrame[i])
+                    self.data = self.data.join(ohDataFrame, how='outer')[columnNames]
+                else:
+                    raise NotImplementedError(f"{self.stringConversion} is not a valid value for stringConversion")
 
-    def convertStrings(self, column, columnData):
-        if self.stringConversion == 'int':
-            columnData = self.convertStringsToInt(column, columnData).astype(np.int)
-        elif self.stringConversion == 'onehot':
-            columnData = self.convertStringToOH(column, columnData)
-        else:
-            raise NotImplementedError(f"{self.stringConversion} is not a valid value for stringConversion")
-        return columnData
+        for column in self.data.columns:
+            columnData = self.data[column].copy()
+            self.data[column] = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
 
     def convertStringsToInt(self, column, columnData):
         columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
@@ -74,9 +80,12 @@ class ArffFile:
         columnData = self.labelEncoders[column].transform(columnData)
         return columnData
 
-    def convertStringToOH(self, column, columnData):
-        raise NotImplementedError
-        # TODO: yet to be implemented
+    def convertStringToOH(self, columnName, columnData):
+        columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
+        columnDataOH = pd.get_dummies(columnData)
+        mapper = {columnValue: f"{columnName}_{columnValue}" for columnValue in columnDataOH.columns}
+        columnDataOH = columnDataOH.rename(columns=mapper)
+        return columnDataOH
 
         # columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
         # columnDataLabels = np.unique(columnData).reshape(-1, 1)
