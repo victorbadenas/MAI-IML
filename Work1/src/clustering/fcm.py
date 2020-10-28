@@ -18,6 +18,27 @@ Page 29
 """
 
 class FCM:
+    """Fuzzy CMeans Clustering algorithm:
+
+    This object is responsible of performing the fcm algorithm in a
+    set of data and compute its centers.
+
+    Parameters:
+        n_clusters : int, default=8
+            The number of clusters to form as well as the number of
+            centroids to generate.
+
+        max_iter : int, default=300
+            Maximum number of iterations of the fcm algorithm for a
+            single run.
+
+        tol : float, default=1e-4
+            Maximum value tolerated to declare convergence by stability of the U matrix
+
+        verbose : bool, default=False
+            Verbosity mode.
+
+    """
     def __init__(self, n_clusters=8, *, m=3, max_iter=500, tol=1e-4, verbose=False):
         self.nClusters = int(n_clusters)
         self.m = int(m)
@@ -40,7 +61,7 @@ class FCM:
         # assign coefficients randomly to each data point for being in the clusters
         self.currentU = self._initUMatrix(trainData)
 
-        for _ in tqdm(range(self.maxIter)):
+        for _ in range(self.maxIter):
             previousU = copy.copy(self.currentU)
             # compute the centroid for each cluster
             self.centers = self._updateCenters(trainData)
