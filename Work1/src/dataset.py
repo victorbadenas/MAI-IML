@@ -87,16 +87,6 @@ class ArffFile:
         columnDataOH = columnDataOH.rename(columns=mapper)
         return columnDataOH
 
-        # columnData[columnData == '?'] = Counter(columnData[columnData != '?']).most_common()[0][0]
-        # columnDataLabels = np.unique(columnData).reshape(-1, 1)
-        # onehotEncoder = OneHotEncoder()
-        # labelEncoder = LabelEncoder()
-        # integerEncoded = labelEncoder.fit_transform(columnDataLabels)
-        # integerEncoded = integerEncoded.reshape(-1, 1)
-        # onehotEncoder.fit(integerEncoded)
-        # columnData = onehotEncoder.transform()
-        # return columnData
-
     @staticmethod
     def normalizeFloatColumn(data, type="min-max"):
         if type == "stardardisation":
