@@ -55,7 +55,7 @@ class ArffFile:
             columnData = self.data[column].copy()
             if columnData.dtype.kind == 'O':
                 if self.stringConversion == 'int':
-                    columnData = self.convertStringsToInt(column, columnData).astype(np.int)
+                    self.data[column] = self.convertStringsToInt(column, columnData).astype(np.int)
                 elif self.stringConversion == 'onehot':
                     ohDataFrame = self.convertStringToOH(column, columnData)
                     self.data = self.data.drop(column, axis=1)
@@ -68,7 +68,10 @@ class ArffFile:
                 else:
                     raise NotImplementedError(f"{self.stringConversion} is not a valid value for stringConversion")
 
-        for column in self.data.columns:
+        gsColumn = columnNames[-1]
+        self.data[gsColumn] = self.convertStringsToInt(gsColumn, self.data[gsColumn]).astype(np.int)
+
+        for column in self.data.columns[:-1]:
             columnData = self.data[column].copy()
             self.data[column] = self.normalizeFloatColumn(columnData, type=self.floatNormalization)
 
