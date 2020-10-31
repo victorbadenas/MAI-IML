@@ -16,11 +16,7 @@ Output: K cluster centers, c_1,...,c_k
 class BisectingKMeans:
     def __init__(self, n_clusters=8, *, init='random', n_init=10, max_iter=500, tol=1e-4, verbose=False):
         self.numberOfClusters = n_clusters
-        self.maxIterations = int(max_iter)
-        self.maxStopDistance = tol
         self.verbose = verbose
-        self.init = init
-        self.nInit = n_init
         self.kmeans = KMeans(n_clusters=2, init=init, n_init=n_init, max_iter=max_iter, tol=tol, verbose=verbose)
         self.centers = None
 
@@ -55,7 +51,7 @@ class BisectingKMeans:
     def _computeClusterSize(self, trainData, clusterIdx):
         clusterData = trainData[self.dataLabels == clusterIdx]
         distances = l2norm(clusterData, self.centers[clusterIdx])
-        return np.sum(distances)
+        return np.max(distances)
 
     def _predictClusters(self, data):
         """
