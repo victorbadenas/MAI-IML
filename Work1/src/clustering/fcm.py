@@ -5,17 +5,6 @@ from scipy.spatial.distance import cdist
 from numpy.linalg import norm
 from ..utils import convertToNumpy
 
-"""
-http://openaccess.uoc.edu/webapps/o2/bitstream/10609/59066/7/ruizjcTFG0117memoria.pdf
-Page 29
-
-- Choose a number of clusters.
-- Assign coefficients randomly to each data point for being in the clusters.
-- Repeat until the algorithm has converged (that is, the coefficients' change between two iterations is no more than tolerance, the given sensitivity threshold) :
-    - Compute the centroid for each cluster (shown below).
-    - For each data point, compute its coefficients of being in the clusters.
-
-"""
 
 class FCM:
     """Fuzzy CMeans Clustering algorithm:
@@ -55,29 +44,57 @@ class FCM:
         self.labels = None
 
     def fit(self, trainData):
-        # convert to numpy array
-        trainData = convertToNumpy(trainData)
+        """Compute cmeans centroids for trainData.
+        
+        Parameters:
+            trainData: {np.ndarray, pd.DataFrame, list} of shape (n_samples, n_features)
+                Training instances to compute cluster centers
 
-        # assign coefficients randomly to each data point for being in the clusters
+        Returns:
+            self: fitted algorithm
+        """
+        trainData = convertToNumpy(trainData)
         self.currentU = self._initUMatrix(trainData)
 
         for _ in range(self.maxIter):
             previousU = copy.copy(self.currentU)
-            # compute the centroid for each cluster
             self.centers = self._updateCenters(trainData)
-            # compute U matrix by predicting
             self.currentU = self._computeUMatrix(trainData)
             if self._distanceInTolerance(self.currentU, previousU):
                 break
 
-        # set labels for training data
         self.labels = self.getLabels(self.currentU)
+        return self
 
     def predict(self, data):
+        """Compute cmeans labels for trainData given previously computed centroids.
+        
+        Parameters:
+            data: {np.ndarray, pd.DataFrame, list} of shape (n_samples, n_features)
+                Training instances to infer.
+
+        Returns:
+            labels: np.ndarray of shape (n_samples,) containing int data with the cluster
+                index for each sample in data
+
+        Notes:
+            n_features of data must match n_feaures of self.centers for correctly 
+            computing the labels, otherwise `ValueError` will be raised.
+        """
         predictU = self._computeUMatrix(data)
         return self.getLabels(predictU)
 
     def fitPredict(self, data):
+        """Compute cmeans centroids for trainData.
+        
+        Parameters:
+            trainData: {np.ndarray, pd.DataFrame, list} of shape (n_samples, n_features)
+                Training instances to compute cluster centers and to infer labels from.
+
+        Returns:
+            labels: np.ndarray of shape (n_samples,) containing int data with the cluster
+                index for each sample in data
+        """
         self.fit(data)
         return self.labels
 
