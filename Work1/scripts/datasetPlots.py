@@ -16,7 +16,6 @@ def main():
         data = arfffile.getData()
         data = data.drop(data.columns[-1], axis=1)
 
-
         arfffile.scatterPlot(ignoreLabel=True, show=False, figsize=(15, 9))
         plt.savefig(arffResultsFolder / "scatterplot.png")
         plt.close()
