@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 from scipy.spatial.distance import cdist
+from sklearn.metrics import silhouette_score
 from .kmeansPP import KMeansPP
 from ..utils import convertToNumpy, l2norm
 """
@@ -67,21 +68,25 @@ class KMeans:
         bestMetric = None
         # initialize best centers
         bestCenters = None
+        bestLabels = None
         for _ in range(self.nInit):
             self.reset()
             # run fitIteration
-            self.fitIteration(trainData)
+            clusterLabels = self.fitIteration(trainData)
             # compare best metric
             if bestMetric is None:
                 bestMetric = copy.copy(self.inertias_)
                 bestCenters = self.centers.copy()
+                bestLabels = clusterLabels
             elif bestMetric[-1] > self.inertias_[-1]:
                 bestMetric = copy.copy(self.inertias_)
                 bestCenters = self.centers.copy()
+                bestLabels = clusterLabels
         # reset
         self.reset()
         # assign best stored centers and metric
         self.inertias_, self.centers = bestMetric, bestCenters
+        self.sihouette_ = silhouette_score(trainData, bestLabels)
         return self
 
     def fitIteration(self, trainData):
@@ -106,6 +111,7 @@ class KMeans:
                 print(f"Iteration {iterationIdx} with inertia {self.inertias_[-1]:.2f}")
             if self._stopIteration(previousCenters, self.centers, previousLabels, clusterLabels):
                 break
+        return clusterLabels
 
     def predict(self, data):
         """Compute kmeans labels for trainData given previously computed centroids.
