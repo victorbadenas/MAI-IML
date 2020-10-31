@@ -21,7 +21,6 @@ from metrics import clusteringMappingMetric
 
 def purity_score(y_true, y_pred):
     contingency_matrix = clusteringMetrics.contingency_matrix(y_true, y_pred)
-    # return purity
     return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
 
 def runDBSCAN(data):
@@ -50,10 +49,10 @@ def bisectingKmeans(data, numOfClusters):
     return labels
 
 
-file_paths=[Path("../datasets/vote.arff"), Path("../datasets/adult.arff"), Path("../datasets/waveform.arff")]
+file_paths=[Path("../datasets/vote.arff"), Path("../datasets/adult.arff"), Path("../datasets/pen-based.arff")]
 RESULTS_BASE = Path("../results")
-clusterMethods = [sklearnKMeans, ourKMeans, kMeansPP]
-K=10
+clusterMethods = [sklearnKMeans, ourKMeans, kMeansPP, bisectingKmeans]
+K = 10
 pca = PCA(n_components=3)
 
 
@@ -92,8 +91,7 @@ for filePath in file_paths:
             kdf = pd.DataFrame.from_dict(metrics, orient='index', columns=[k])
             resultsDataframe = resultsDataframe.join(kdf)
 
-            np.savetxt(dfPath / f"{k}clusters.csv", confusionMatrix, delimiter=",", fmt='%i')
-            # confusionMatrix.tofile(dfPath / f"{k}clusters.csv", sep=',', format='%.2f')
+            np.savetxt(dfPath / f"{k}clusters_confusion.csv", confusionMatrix, delimiter=",", fmt='%i')
 
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
