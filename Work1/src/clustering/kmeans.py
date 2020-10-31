@@ -97,7 +97,7 @@ class KMeans:
                 Training instances to compute cluster centers
 
         Returns:
-            self: fitted estimator
+            self: fitted algorithm
         """
         trainData = convertToNumpy(trainData)
         self._initializeCenters(trainData)
