@@ -2,19 +2,19 @@ import numpy as np
 from collections import Counter
 from sklearn.metrics import confusion_matrix
 
-def clusteringMappingMetric(self, X, labels_pred, labels_gs):
+def clusteringMappingMetric(labels_pred, labels_gs):
     """
     docstring
     """
-    assert len(labels_gs) == len(labels_pred) == X.shape[0]
+    assert len(labels_gs) == len(labels_pred)
     
     X = np.array(X)
     labels_pred = np.array(labels_pred)
     labels_gs = np.array(labels_gs)
     modified_labels = labels_pred.copy()
     for clusterIdx in set(labels_pred):
-        clusterData = X[labels_pred == clusterIdx]
-        clusterDataGs = labels_gs[labels_pred == clusterIdx]
+        mask = labels_pred == clusterIdx
+        clusterDataGs = labels_gs[mask]
         clusterAssignation = Counter(clusterDataGs).most_common(1)[0][0]
-        modified_labels[labels_pred == clusterIdx] = clusterAssignation
+        modified_labels[mask] = clusterAssignation
     return confusion_matrix(labels_gs, modified_labels)
