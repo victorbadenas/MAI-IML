@@ -11,10 +11,13 @@ from sklearn.cluster import KMeans as SKMeans
 import pandas as pd
 import sys
 from pathlib import Path
+import warnings
+warnings.filterwarnings(action='ignore')
 
 sys.path.append("..")
 from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
 from src.dataset import ArffFile
+from metrics import clusteringMappingMetric
 
 def purity_score(y_true, y_pred):
     contingency_matrix = clusteringMetrics.contingency_matrix(y_true, y_pred)
@@ -47,7 +50,7 @@ def bisectingKmeans(data, numOfClusters):
     return labels
 
 
-file_paths=[Path("../datasets/vote.arff"),Path("../datasets/adult.arff"),Path("../datasets/waveform.arff")]
+file_paths=[Path("../datasets/vote.arff"), Path("../datasets/adult.arff"), Path("../datasets/waveform.arff")]
 RESULTS_BASE = Path("../results")
 clusterMethods = [sklearnKMeans, ourKMeans, kMeansPP]
 K=10
@@ -55,6 +58,7 @@ pca = PCA(n_components=3)
 
 
 for filePath in file_paths:
+    print(f"processing {filePath}...")
     arffFile = ArffFile(filePath)
     unsupervisedFeatures = arffFile.getData().copy()
 
@@ -70,8 +74,8 @@ for filePath in file_paths:
         resultsDataframe = pd.DataFrame(index=["davies_bouldin_score", "adjusted_rand_score", "completeness_score", "purity_score"])
         results_dir = RESULTS_BASE / filePath.stem / cluster_method.__name__
         results_dir.mkdir(exist_ok=True, parents=True)
-        dfPath = results_dir / "data" / "metric.csv"
-        dfPath.parent.mkdir(exist_ok=True)
+        dfPath = results_dir / "data"
+        dfPath.mkdir(exist_ok=True)
 
         for k in range(2, K):
             print(f"{k} number of clusters")
@@ -83,9 +87,13 @@ for filePath in file_paths:
             metrics["adjusted_rand_score"] = clusteringMetrics.adjusted_rand_score(y, clusters)
             metrics["completeness_score"] = clusteringMetrics.completeness_score(y, clusters)
             metrics["purity_score"] = purity_score(y, clusters)
+            confusionMatrix = clusteringMappingMetric(clusters, y)
 
             kdf = pd.DataFrame.from_dict(metrics, orient='index', columns=[k])
             resultsDataframe = resultsDataframe.join(kdf)
+
+            np.savetxt(dfPath / f"{k}clusters.csv", confusionMatrix, delimiter=",", fmt='%i')
+            # confusionMatrix.tofile(dfPath / f"{k}clusters.csv", sep=',', format='%.2f')
 
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
@@ -96,5 +104,5 @@ for filePath in file_paths:
             plt.legend()
             plt.savefig(results_dir / f"3DScatter_{k}clusters.png")
 
-        resultsDataframe.to_csv(dfPath)
+        resultsDataframe.to_csv(dfPath / "metric.csv")
 
