@@ -67,7 +67,7 @@ def bisectingKmeans(data, numOfClusters):
     return labels
 ''' 
 file_paths=["C:/Users/stick/Documents/Py_Archieve/IML/MAI-IML-master/Work1/datasets/vote.arff","C:/Users/stick/Documents/Py_Archieve/IML/MAI-IML-master/Work1/datasets/adult.arff","C:/Users/stick/Documents/Py_Archieve/IML/MAI-IML-master/Work1/datasets/waveform.arff"]
-for files in file_paths:                
+for files in file_paths:
     arffFile = ArffFile("C:/Users/stick/Documents/Py_Archieve/IML/MAI-IML-master/Work1/datasets/vote.arff")
     unsupervisedFeatures = arffFile.getData().copy()
 
@@ -82,15 +82,16 @@ for files in file_paths:
     K=range(2,10)
     for k in K:
         for cluster_method in range(1,4):
-            if cluster_method=1:
+            if cluster_method = 1:
                 clusters = sklearnKMeans(unsupervisedFeatures,k)
-            elif cluster_method=2:
+            elif cluster_method = 2:
                 clusters = ourKMeans(unsupervisedFeatures,k)
-            elif cluster_method=3:
+            elif cluster_method = 3:
                 clusters = kMeansPP(unsupervisedFeatures,k)
             else:
                 #clusters = bisectingKmeans(unsupervisedFeatures,k)
-            
+                pass
+
             pcaData = pca.fit_transform(dataNumpy)
 
             metrics = {}
@@ -117,5 +118,3 @@ for files in file_paths:
                 ax.view_init(30, 185)
             plt.legend()
             plt.show()
-            
-            
