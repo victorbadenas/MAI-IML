@@ -51,7 +51,7 @@ class BisectingKMeans:
     def _computeClusterSize(self, trainData, clusterIdx):
         clusterData = trainData[self.dataLabels == clusterIdx]
         distances = l2norm(clusterData, self.centers[clusterIdx])
-        return np.max(distances)
+        return np.max(distances) if len(clusterData) != 0 else 0
 
     def _predictClusters(self, data):
         """
