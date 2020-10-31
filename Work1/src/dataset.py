@@ -166,7 +166,7 @@ class ArffFile:
     def getStringMapData(self):
         return self.labelEncoders
 
-    def scatterPlot(self, ignoreLabel=False, **kwargs):
+    def scatterPlot(self, ignoreLabel=False, show=True, **kwargs):
         data = self.data.copy()
         if ignoreLabel:
             data = data.drop(self.data.columns[-1], axis=1)
@@ -178,7 +178,8 @@ class ArffFile:
             ax.yaxis.label.set_ha('right')
         plt.tight_layout()
         plt.gcf().subplots_adjust(wspace=0, hspace=0)
-        plt.show()
+        if show:
+            plt.show()
 
 if __name__ == "__main__":
     arffFile = ArffFile(Path("../datasets/adult.arff"))
