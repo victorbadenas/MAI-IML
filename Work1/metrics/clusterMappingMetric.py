@@ -7,8 +7,7 @@ def clusteringMappingMetric(labels_pred, labels_gs):
     docstring
     """
     assert len(labels_gs) == len(labels_pred)
-    
-    X = np.array(X)
+
     labels_pred = np.array(labels_pred)
     labels_gs = np.array(labels_gs)
     modified_labels = labels_pred.copy()
