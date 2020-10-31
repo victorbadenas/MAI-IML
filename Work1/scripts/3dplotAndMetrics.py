@@ -1,4 +1,3 @@
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
@@ -6,7 +5,6 @@ from sklearn.metrics import cluster as clusteringMetrics
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
-from pprint import pprint
 from sklearn.cluster import KMeans as SKMeans
 import pandas as pd
 import sys
