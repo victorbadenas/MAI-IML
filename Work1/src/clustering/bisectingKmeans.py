@@ -33,9 +33,9 @@ class BisectingKMeans:
             clusterData = trainData[self.dataLabels == biggestIdx]
             self.kmeans.reset()
             self.kmeans.fit(clusterData)
-            np.delete(self.centers, biggestIdx)
             for center in self.kmeans.centers:
                 self._updateCenters(center)
+            self.centers = np.delete(self.centers, biggestIdx, axis=0)
         return self
 
     def predict(self, data):
