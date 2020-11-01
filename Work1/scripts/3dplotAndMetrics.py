@@ -2,6 +2,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 from sklearn.metrics import cluster as clusteringMetrics
+from sklearn.metrics import silhouette_score
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,7 +60,7 @@ pca = PCA(n_components=3)
 
 for filePath in file_paths:
     print(f"processing {filePath}...")
-    arffFile = ArffFile(filePath)
+    arffFile = ArffFile(filePath, missingDataImputation="median")
     unsupervisedFeatures = arffFile.getData().copy()
 
     labelColumn = unsupervisedFeatures.columns[-1]
@@ -77,9 +78,10 @@ for filePath in file_paths:
         dfPath = results_dir / "data"
         dfPath.mkdir(exist_ok=True)
 
+        silhouettes = []
         for k in range(2, K):
             print(f"{k} number of clusters")
-            clusters = cluster_method(unsupervisedFeatures,k)
+            clusters = cluster_method(unsupervisedFeatures, k)
             pcaData = pca.fit_transform(dataNumpy)
 
             metrics = dict()
@@ -92,6 +94,8 @@ for filePath in file_paths:
             kdf = pd.DataFrame.from_dict(metrics, orient='index', columns=[k])
             resultsDataframe = resultsDataframe.join(kdf)
 
+            silhouettes.append(silhouette_score(unsupervisedFeatures, clusters))
+
             np.savetxt(dfPath / f"{k}clusters_confusion.csv", confusionMatrix, delimiter=",", fmt='%i')
 
             fig = plt.figure()
@@ -101,7 +105,14 @@ for filePath in file_paths:
                 ax.scatter(subData[:, 0], subData[:, 1], subData[:, 2], s=10, label=label)
                 ax.view_init(30, 185)
             plt.legend()
+            plt.tight_layout()
             plt.savefig(results_dir / f"3DScatter_{k}clusters.png")
-            # plt.show()
+            plt.close()
+
+        plt.plot(list(range(2, K)), silhouettes)
+        plt.xlabel("K")
+        plt.ylabel("silhouette score")
+        plt.savefig(results_dir / f"silhouettes.png")
+        plt.close()
 
         resultsDataframe.to_csv(dfPath / "metric.csv")
