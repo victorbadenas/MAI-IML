@@ -40,11 +40,16 @@ class Main:
 
     def runAlgorithms(self, data):
         labels = {}
-        labels["DBScan"] = self.runDBSCAN(data, **self.config["parameters"]["DBSCAN"])
-        labels["ourKMeans"] = self.ourKMeans(data, **self.config["parameters"]["kMeans"])
-        labels["kMeansPP"] = self.kMeansPP(data, **self.config["parameters"]["bisectingKMeans"])
-        labels["bisectingKmeans"] = self.bisectingKmeans(data, **self.config["parameters"]["kmeansPP"])
-        labels["fcm"] = self.fcm(data, **self.config["parameters"]["fcm"])
+        if "DBSCAN" in self.config["parameters"]:
+            labels["DBScan"] = self.runDBSCAN(data, **self.config["parameters"]["DBSCAN"])
+        if "kMeans" in self.config["parameters"]:
+            labels["ourKMeans"] = self.ourKMeans(data, **self.config["parameters"]["kMeans"])
+        if "bisectingKMeans" in self.config["parameters"]:
+            labels["bisectingKmeans"] = self.kMeansPP(data, **self.config["parameters"]["bisectingKMeans"])
+        if "kmeansPP" in self.config["parameters"]:
+            labels["kMeansPP"] = self.bisectingKmeans(data, **self.config["parameters"]["kmeansPP"])
+        if "fcm" in self.config["parameters"]:
+            labels["fcm"] = self.fcm(data, **self.config["parameters"]["fcm"])
         return labels
 
     def computeMetrics(self, data, trueLabels, predictedLabels):
