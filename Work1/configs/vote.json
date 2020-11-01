@@ -23,7 +23,7 @@
             "verbose": false
         },
         "bisectingKMeans": {
-            "n_clusters": 6,
+            "n_clusters": 7,
             "init": "random",
             "n_init": 10,
             "max_iter": 500,
