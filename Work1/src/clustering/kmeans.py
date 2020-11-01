@@ -86,7 +86,7 @@ class KMeans:
         self.reset()
         # assign best stored centers and metric
         self.inertias_, self.centers = bestMetric, bestCenters
-        if bestLabels in range(2, trainData.shape[0]-1):
+        if len(bestLabels) in range(2, trainData.shape[0]-1):
             self.silhouette_ = silhouette_score(trainData, bestLabels)
         else:
             self.silhouette_ = None
