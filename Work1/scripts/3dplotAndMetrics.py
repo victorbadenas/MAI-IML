@@ -2,6 +2,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 from sklearn.metrics import cluster as clusteringMetrics
+from sklearn.metrics import silhouette_score
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,11 +16,7 @@ warnings.filterwarnings(action='ignore')
 sys.path.append("..")
 from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
 from src.dataset import ArffFile
-from metrics import clusteringMappingMetric
-
-def purity_score(y_true, y_pred):
-    contingency_matrix = clusteringMetrics.contingency_matrix(y_true, y_pred)
-    return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+from src.metrics import clusteringMappingMetric, purity_score
 
 def runDBSCAN(data, numOfClusters=None):
     clustering = DBSCAN(n_jobs=-1, eps=.75)
@@ -46,18 +43,24 @@ def bisectingKmeans(data, numOfClusters):
     labels = clustering.fitPredict(data)
     return labels
 
+def fcm(data, numOfClusters):
+    clustering = FCM(n_clusters=numOfClusters, verbose=False)
+    labels = clustering.fitPredict(data)
+    return labels
 
-# file_paths = [Path("../datasets/vote.arff"), Path("../datasets/adult.arff"), Path("../datasets/pen-based.arff")]
-file_paths = [Path("../datasets/adult.arff")]
+
+file_paths = [Path("../datasets/vote.arff"), Path("../datasets/adult.arff"), Path("../datasets/pen-based.arff")]
+# file_paths = [Path("../datasets/adult.arff"), Path("../datasets/pen-based.arff")]
 RESULTS_BASE = Path("../results")
-clusterMethods = [runDBSCAN]#, sklearnKMeans, ourKMeans, kMeansPP, bisectingKmeans]
-K = 3
+clusterMethods = [sklearnKMeans, ourKMeans, kMeansPP, bisectingKmeans, fcm]
+# clusterMethods = [runDBSCAN]
+K = 20
 pca = PCA(n_components=3)
 
 
 for filePath in file_paths:
     print(f"processing {filePath}...")
-    arffFile = ArffFile(filePath)
+    arffFile = ArffFile(filePath, missingDataImputation="median")
     unsupervisedFeatures = arffFile.getData().copy()
 
     labelColumn = unsupervisedFeatures.columns[-1]
@@ -75,9 +78,10 @@ for filePath in file_paths:
         dfPath = results_dir / "data"
         dfPath.mkdir(exist_ok=True)
 
+        silhouettes = []
         for k in range(2, K):
             print(f"{k} number of clusters")
-            clusters = cluster_method(unsupervisedFeatures,k)
+            clusters = cluster_method(unsupervisedFeatures, k)
             pcaData = pca.fit_transform(dataNumpy)
 
             metrics = dict()
@@ -87,20 +91,28 @@ for filePath in file_paths:
             metrics["purity_score"] = purity_score(y, clusters)
             confusionMatrix = clusteringMappingMetric(clusters, y)
 
-            # kdf = pd.DataFrame.from_dict(metrics, orient='index', columns=[k])
-            # resultsDataframe = resultsDataframe.join(kdf)
+            kdf = pd.DataFrame.from_dict(metrics, orient='index', columns=[k])
+            resultsDataframe = resultsDataframe.join(kdf)
 
-            # np.savetxt(dfPath / f"{k}clusters_confusion.csv", confusionMatrix, delimiter=",", fmt='%i')
+            silhouettes.append(silhouette_score(unsupervisedFeatures, clusters))
 
-            print(dataNumpy[300], clusters[300], y[300])
+            np.savetxt(dfPath / f"{k}clusters_confusion.csv", confusionMatrix, delimiter=",", fmt='%i')
+
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
-            for label in set(y):
-                subData = pcaData[y == label]
+            for label in set(clusters):
+                subData = pcaData[clusters == label]
                 ax.scatter(subData[:, 0], subData[:, 1], subData[:, 2], s=10, label=label)
                 ax.view_init(30, 185)
             plt.legend()
-            # plt.savefig(results_dir / f"3DScatter_{k}clusters.png")
-            plt.show()
+            plt.tight_layout()
+            plt.savefig(results_dir / f"3DScatter_{k}clusters.png")
+            plt.close()
+
+        plt.plot(list(range(2, K)), silhouettes)
+        plt.xlabel("K")
+        plt.ylabel("silhouette score")
+        plt.savefig(results_dir / f"silhouettes.png")
+        plt.close()
 
         resultsDataframe.to_csv(dfPath / "metric.csv")
