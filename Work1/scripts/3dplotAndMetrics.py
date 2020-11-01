@@ -1,20 +1,18 @@
+import sys
+import warnings
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans as SKMeans
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
-import matplotlib.pyplot as plt
 from sklearn.metrics import cluster as clusteringMetrics
 from sklearn.metrics import silhouette_score
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.cluster import KMeans as SKMeans
-import pandas as pd
-import sys
-from pathlib import Path
-import warnings
 warnings.filterwarnings(action='ignore')
 
 sys.path.append("..")
-from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
+from src.clustering import KMeans, BisectingKMeans, FCM
 from src.dataset import ArffFile
 from src.metrics import clusteringMappingMetric, purity_score
 
