@@ -45,9 +45,10 @@ class Main:
         if "kMeans" in self.config["parameters"]:
             labels["ourKMeans"] = self.ourKMeans(data, **self.config["parameters"]["kMeans"])
         if "bisectingKMeans" in self.config["parameters"]:
-            labels["bisectingKmeans"] = self.kMeansPP(data, **self.config["parameters"]["bisectingKMeans"])
+            labels["bisectingKmeans"] = self.bisectingKmeans(data, **self.config["parameters"]["bisectingKMeans"])
         if "kmeansPP" in self.config["parameters"]:
-            labels["kMeansPP"] = self.bisectingKmeans(data, **self.config["parameters"]["kmeansPP"])
+            self.config["parameters"]["kmeansPP"]["init"] = "k-means++"
+            labels["kMeansPP"] = self.ourKMeans(data, **self.config["parameters"]["kmeansPP"])
         if "fcm" in self.config["parameters"]:
             labels["fcm"] = self.fcm(data, **self.config["parameters"]["fcm"])
         return labels
