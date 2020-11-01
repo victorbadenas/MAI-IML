@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from src.utils import timer
 from pprint import pprint
 from sklearn.metrics import cluster as clusteringMetrics
-from metrics import clusteringMappingMetric, purity_score
+from src.metrics import clusteringMappingMetric, purity_score
 
 def parseArguments():
     parser = argparse.ArgumentParser()

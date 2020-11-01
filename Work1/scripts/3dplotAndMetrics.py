@@ -15,7 +15,7 @@ warnings.filterwarnings(action='ignore')
 sys.path.append("..")
 from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
 from src.dataset import ArffFile
-from metrics import clusteringMappingMetric, purity_score
+from src.metrics import clusteringMappingMetric, purity_score
 
 def runDBSCAN(data, numOfClusters=None):
     clustering = DBSCAN(n_jobs=-1, eps=.75)

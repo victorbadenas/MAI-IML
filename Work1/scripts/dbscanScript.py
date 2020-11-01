@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 
 sys.path.append("..")
 from src.dataset import ArffFile
-from metrics import clusteringMappingMetric
+from src.metrics import clusteringMappingMetric
 
 def runDBSCAN(data, **kwargs):
     clustering = DBSCAN(**kwargs)
