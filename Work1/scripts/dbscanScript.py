@@ -3,13 +3,10 @@ import numpy as np
 from pathlib import Path
 from sklearn.cluster import DBSCAN
 from matplotlib import pyplot as plt
-from sklearn.metrics import cluster as clusteringMetrics
 from sklearn.metrics import confusion_matrix
-from sklearn.decomposition import PCA
 
 sys.path.append("..")
 from src.dataset import ArffFile
-from src.metrics import clusteringMappingMetric
 
 def runDBSCAN(data, **kwargs):
     clustering = DBSCAN(**kwargs)

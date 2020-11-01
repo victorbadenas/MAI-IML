@@ -9,7 +9,7 @@ from sklearn.cluster import KMeans as SKMeans
 sys.path.append("..")
 warnings.filterwarnings(action='ignore')
 
-from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
+from src.clustering import KMeans, BisectingKMeans, FCM
 from src.utils import timer
 from src.dataset import ArffFile
 

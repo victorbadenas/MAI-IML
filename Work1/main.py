@@ -1,20 +1,19 @@
+import json
 import argparse
 import warnings
-import json
-import copy
 import numpy as np
-warnings.simplefilter(action='ignore')
-from src.dataset import ArffFile
-from pathlib import Path
-from sklearn.cluster import DBSCAN
-from src.clustering import KMeans, BisectingKMeans, KMeansPP, FCM
-from sklearn.decomposition import PCA
-from collections import Counter
 import pandas as pd
-import matplotlib.pyplot as plt
-from src.utils import timer
 from pprint import pprint
+from pathlib import Path
+import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
 from sklearn.metrics import cluster as clusteringMetrics
+
+warnings.simplefilter(action='ignore')
+from src.utils import timer
+from src.dataset import ArffFile
+from src.clustering import KMeans, BisectingKMeans, FCM
 from src.metrics import clusteringMappingMetric, purity_score
 
 def parseArguments():
