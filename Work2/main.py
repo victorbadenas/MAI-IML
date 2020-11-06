@@ -4,13 +4,15 @@ import warnings
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA as skPCA
+from sklearn.decomposition import IncrementalPCA
 
 warnings.simplefilter(action='ignore')
 from src.utils import timer
 from src.dataset import ArffFile
 from src.visualize import Visualizer
 from src.pca import PCA
-
+from src.clustering import KMeans
 
 def parseArguments():
     parser = argparse.ArgumentParser()
@@ -25,6 +27,8 @@ class Main:
 
     def __call__(self):
         self.step1()
+        self.step3()
+        self.step4()
 
     @staticmethod
     def loadArffFile(arffFilePath):
@@ -66,6 +70,39 @@ class Main:
         #step 9
         reconstructedData = pca.inverse_transform(reducedData)
         Visualizer.labeledScatter3D(reconstructedData[:, dims], trueLabels, path=step1ResultsFolder / f"reconstructedScatter.png")
+
+
+    def step3(self):
+        step1ResultsFolder = Path(self.config["resultsDir"]) / "step3"
+        step1ResultsFolder.mkdir(exist_ok=True, parents=True)
+
+        data, trueLabels = self.loadArffFile(Path(self.config["path"]))
+        data = data.to_numpy()
+
+        pca = skPCA(3)
+        ipca = IncrementalPCA(3)
+        reducedData = pca.fit_transform(data)
+        iReducedData = ipca.fit_transform(data)
+
+        Visualizer.labeledScatter3D(reducedData, trueLabels, path=step1ResultsFolder / f"pcaScatter.png")
+        Visualizer.labeledScatter3D(iReducedData, trueLabels, path=step1ResultsFolder / f"ipcaScatter.png")
+
+
+    def step4(self):
+        step1ResultsFolder = Path(self.config["resultsDir"]) / "step4"
+        step1ResultsFolder.mkdir(exist_ok=True, parents=True)
+
+        data, trueLabels = self.loadArffFile(Path(self.config["path"]))
+        data = data.to_numpy()
+
+        pca = skPCA(3)
+        reducedData = pca.fit_transform(data)
+
+        kMeans = KMeans(**self.config["parameters"]["kMeans"])
+        predictedLabels = kMeans.fitPredict(reducedData)
+
+        Visualizer.labeledScatter3D(reducedData, trueLabels, path=step1ResultsFolder / f"gsScatter.png")
+        Visualizer.labeledScatter3D(reducedData, predictedLabels, path=step1ResultsFolder / f"kmeansScatter.png")
 
 if __name__ == "__main__":
     args = parseArguments()

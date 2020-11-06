@@ -3,5 +3,14 @@
     "resultsDir": "results/vote",
     "verbose": false,
     "plotClusters": true,
-    "parameters": {}
+    "parameters": {
+        "kMeans": {
+            "n_clusters": 7,
+            "init": "random",
+            "n_init": 10,
+            "max_iter": 500,
+            "tol": 0.0004,
+            "verbose": false
+        }
+    }
 }
