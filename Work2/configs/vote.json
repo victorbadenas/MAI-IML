@@ -1,0 +1,7 @@
+{
+    "path": "datasets/vote.arff",
+    "resultsDir": "results/vote",
+    "verbose": false,
+    "plotClusters": true,
+    "parameters": {}
+}
