@@ -21,7 +21,7 @@ class PCA:
         return self
 
     def __computeEigenVecEigenVal(self, data):
-        covarianceMatrix = np.cov(trainData.T)
+        covarianceMatrix = np.cov(data.T)
         if self.print_:
             print(covarianceMatrix)
         eigenValues, eigenVectors = np.linalg.eig(covarianceMatrix)
