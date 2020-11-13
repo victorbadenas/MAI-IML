@@ -1,8 +1,9 @@
 import numpy as np
 
+
 class PCA:
     """
-    docstring
+    PCA Algorithm
     """
     def __init__(self, n_components=3, *, verbose=False, print_=True):
         self.nComponents = n_components
@@ -15,16 +16,22 @@ class PCA:
         trainData = trainData.copy()
         trainData = self.__normalize(trainData)
         eigenValues, eigenVectors = self.__computeEigenVecEigenVal(trainData)
-        # eigenvalues and eigenvectors already sorted in descending eigenvalue order
         self.eigenVectors = eigenVectors[:, :self.nComponents]
         self.eigenValues = eigenValues[:self.nComponents]
         return self
+
+    def sortValuesVectors(self, eigenValues, eigenVectors):
+        idxs = np.argsort(eigenValues)[::-1]
+        eigenValues = eigenValues[idxs]
+        eigenVectors = eigenVectors[:, idxs]
+        return eigenValues, eigenVectors
 
     def __computeEigenVecEigenVal(self, data):
         covarianceMatrix = np.cov(data.T)
         if self.print_:
             print(covarianceMatrix)
         eigenValues, eigenVectors = np.linalg.eig(covarianceMatrix)
+        eigenValues, eigenVectors = self.sortValuesVectors(eigenValues, eigenVectors)
         if self.print_:
             self.__displayEigenValuesAndEigenvectors(eigenVectors, eigenValues)
         return eigenValues, eigenVectors
@@ -63,21 +70,24 @@ class PCA:
         self.mean_ = None
 
     def __predict(self, data):
-        return data@self.eigenVectors
+        return (data - self.mean_)@self.eigenVectors
 
     def __revert(self, data):
         return (data@self.eigenVectors.T) + self.mean_
 
+
 if __name__ == "__main__":
-    trainData = np.random.randn(20, 4)
+    trainData = np.random.randn(20, 10)
     n_components = 2
 
     pca = PCA(n_components=n_components)
 
     reducedData = pca.fit_transform(trainData)
     assert reducedData.shape[1] == n_components
-    print(reducedData)
 
     reconstructedData = pca.inverse_transform(reducedData)
     assert reconstructedData.shape == trainData.shape
-    print(reconstructedData)
+
+    print(pca.eigenVectors@pca.eigenVectors.T)  # should be a unit matrix
+
+    print(np.mean(reconstructedData - trainData))  # should be close to 0
