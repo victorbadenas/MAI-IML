@@ -2,7 +2,7 @@ import copy
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.metrics import silhouette_score
-from ..utils import convertToNumpy, l2norm
+from .utils import convertToNumpy, l2norm
 """
 https://en.wikipedia.org/wiki/K-means_clustering
 """
