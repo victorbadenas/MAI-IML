@@ -4,6 +4,22 @@ import numpy as np
 class PCA:
     """
     PCA Algorithm
+
+    This object is responsible of performing the PCA algorithm in a set of
+    data and store the necessary information to retrieve the data and infer
+    in the future.
+
+    Parameters:
+        n_components : int, default=3
+            The number of principal components that the return data must have.
+
+        verbose : bool, default=False
+            boolean flag to print intermediate steps and required values 
+            to display.
+
+        print_ : bool, default=True
+            alias for verbose (in future implementations may be different)
+
     """
     def __init__(self, n_components=3, *, verbose=False, print_=True):
         self.nComponents = n_components
