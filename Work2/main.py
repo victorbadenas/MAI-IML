@@ -55,9 +55,8 @@ class Main:
         data = data.to_numpy()
 
         # step 2 plot the original dataset (picked 3 dims with highest variance)
-        stds = list(zip(range(data.shape[1]), data.std(axis=0)))
-        stds.sort(key=lambda x: x[1])
-        dims = [i for i, _ in stds[:3]]
+        stds = data.std(axis=0)
+        dims = np.argsort(stds)[::-1][:3]
         Visualizer.labeledScatter3D(data[:, dims], trueLabels, path=step1ResultsFolder / f"originalScatter.png")
 
         # step 3
