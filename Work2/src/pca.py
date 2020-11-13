@@ -14,7 +14,7 @@ class PCA:
             The number of principal components that the return data must have.
 
         verbose : bool, default=False
-            boolean flag to print intermediate steps and required values 
+            boolean flag to print intermediate steps and required values
             to display.
 
         print_ : bool, default=True
@@ -30,7 +30,7 @@ class PCA:
     def fit(self, trainData):
         self.__reset()
         trainData = trainData.copy()
-        trainData = self.__normalize(trainData)
+        self.__computeMean(trainData)
         eigenValues, eigenVectors = self.__computeEigenVecEigenVal(trainData)
         self.eigenVectors = eigenVectors[:, :self.nComponents]
         self.eigenValues = eigenValues[:self.nComponents]
@@ -52,10 +52,8 @@ class PCA:
             self.__displayEigenValuesAndEigenvectors(eigenVectors, eigenValues)
         return eigenValues, eigenVectors
 
-    def __normalize(self, data):
+    def __computeMean(self, data):
         self.mean_ = data.mean(axis=0, keepdims=True)
-        data -= self.mean_
-        return data
 
     def predict(self, data):
         assert self.eigenVectors is not None, "PCA has not been fitted. run pca.PCA.fit(X) first"
