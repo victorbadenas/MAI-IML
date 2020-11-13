@@ -29,11 +29,14 @@ class PCA:
 
     def fit(self, trainData):
         self.__reset()
+        self.nSamples, self.originalNComponents = trainData.shape[-2:]
         trainData = trainData.copy()
         self.__computeMean(trainData)
         eigenValues, eigenVectors = self.__computeEigenVecEigenVal(trainData)
+        self.__computeVarianceRatio(eigenValues)
         self.eigenVectors = eigenVectors[:, :self.nComponents]
         self.eigenValues = eigenValues[:self.nComponents]
+        self.varianceRatios = self.varianceRatios[:self.nComponents]
         return self
 
     def sortValuesVectors(self, eigenValues, eigenVectors):
@@ -89,6 +92,10 @@ class PCA:
     def __revert(self, data):
         return (data@self.eigenVectors.T) + self.mean_
 
+    def __computeVarianceRatio(self, eigenValues):
+        variance = (eigenValues ** 2) / (self.nSamples - 1)
+        self.varianceRatios = variance / np.sum(variance)
+
 
 if __name__ == "__main__":
     trainData = np.random.randn(20, 10)
@@ -105,3 +112,5 @@ if __name__ == "__main__":
     print(pca.eigenVectors@pca.eigenVectors.T)  # should be a unit matrix
 
     print(np.mean(reconstructedData - trainData))  # should be close to 0
+
+    print(pca.varianceRatios)
