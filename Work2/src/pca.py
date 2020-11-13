@@ -48,7 +48,7 @@ class PCA:
     def __computeEigenVecEigenVal(self, data):
         covarianceMatrix = np.cov(data.T)
         if self.print_:
-            print(covarianceMatrix)
+            print("Covariance Matrix: ", covarianceMatrix)
         eigenValues, eigenVectors = np.linalg.eig(covarianceMatrix)
         eigenValues, eigenVectors = self.sortValuesVectors(eigenValues, eigenVectors)
         if self.print_:
