@@ -1,25 +1,24 @@
 import json
 import argparse
 import warnings
-from pathlib import Path
 import numpy as np
 import pandas as pd
+from pathlib import Path
+from sklearn.manifold import TSNE
+from sklearn.metrics import confusion_matrix
+from sklearn.cluster import KMeans as SKMeans
+from sklearn.metrics import cluster as clusteringMetrics
 from sklearn.decomposition import PCA as skPCA
 from sklearn.decomposition import IncrementalPCA
-
 from src.utils import timer, separateOutput
 from src.dataset import ArffFile
 from src.visualize import Visualizer
 from src.pca import PCA
-from src.kmeans import KMeans
-from sklearn.cluster import KMeans as SKMeans
-from sklearn.metrics import cluster as clusteringMetrics
-from sklearn.metrics import confusion_matrix
-from sklearn.manifold import TSNE
 from src.metrics import clusteringMappingMetric, purity_score
 warnings.simplefilter(action='ignore')
 
 N_COMPONENTS = 3
+
 
 def parseArguments():
     parser = argparse.ArgumentParser()
