@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 import time
 
+
 def bytesToString(bytesObject):
     if hasattr(bytesObject, 'decode'):
         return bytesObject.decode()
     return bytesObject
+
 
 def timer(print_=False):
     def inner2(func):
@@ -20,6 +22,16 @@ def timer(print_=False):
                 return ret, delta
         return inner
     return inner2
+
+
+def separateOutput(msg):
+    def inner2(f):
+        def inner(*args, **kwargs):
+            print(f"---------------------{msg}---------------------")
+            return f(*args, **kwargs)
+        return inner
+    return inner2
+
 
 def convertToNumpy(data):
     """
@@ -37,6 +49,7 @@ def convertToNumpy(data):
         else:
             raise ValueError(f"Expected a 2D list as input")
     raise ValueError(f"type {type(data)} not supported")
+
 
 def l2norm(points, center, axis=0):
     dist = (points - center)**2
