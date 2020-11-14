@@ -15,6 +15,7 @@ from src.kmeans import KMeans
 from sklearn.cluster import KMeans as SKMeans
 from sklearn.metrics import cluster as clusteringMetrics
 from sklearn.metrics import confusion_matrix
+from sklearn.manifold import TSNE
 from src.metrics import clusteringMappingMetric, purity_score
 warnings.simplefilter(action='ignore')
 
@@ -40,6 +41,7 @@ class Main:
         reducedDataMyPCA = self.phase1(data, trueLabels)
         reducedDataskPCA, reducedDataiPCA = self.phase3(data, trueLabels)
         self.phase4(data, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA, trueLabels)
+        self.phase5(data, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA, trueLabels)
 
     @staticmethod
     def loadArffFile(arffFilePath):
@@ -104,14 +106,30 @@ class Main:
         step4ResultsFolder.mkdir(exist_ok=True, parents=True)
 
         phase4Results = pd.DataFrame(index=["davies_bouldin_score", "adjusted_rand_score", "completeness_score", "purity_score"])
-        for title, data in zip(["originalData", "myPCA", "sklearnPCA", "incrementalPCA"], 
+        for title, data in zip(["originalData", "myPCA", "sklearnPCA", "incrementalPCA"],
                                [originalData, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA]):
             kMeans = SKMeans(**self.config["parameters"]["kMeans"])
             predictedLabels = kMeans.fit_predict(data)
             phase4Results = self.__computeKmeansMetrics(data, predictedLabels, trueLabels, title, step4ResultsFolder, phase4Results)
-            Visualizer.labeledScatter3D(data, trueLabels, path=step4ResultsFolder / f"{N_COMPONENTS}_dims_{title}_gsScatter.png")
-            Visualizer.labeledScatter3D(data, predictedLabels, path=step4ResultsFolder / f"{N_COMPONENTS}_dims_{title}_kmeansScatter.png")
         phase4Results.to_csv(step4ResultsFolder / "metric.csv")
+
+    @separateOutput("phase5")
+    @timer(print_=True)
+    def phase5(self, originalData, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA, trueLabels):
+        step5ResultsFolder = Path(self.config["resultsDir"]) / "phase5"
+        step5ResultsFolder.mkdir(exist_ok=True, parents=True)
+
+        tsneData = TSNE(n_components=N_COMPONENTS).fit_transform(originalData)
+        for title, data in zip(["originalData", "myPCA", "sklearnPCA", "incrementalPCA"],
+                               [originalData, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA]):
+            kMeans = SKMeans(**self.config["parameters"]["kMeans"])
+            predictedLabels = kMeans.fit_predict(data)
+            if data.shape[1] > 3:
+                data = reducedDataskPCA
+            Visualizer.labeledScatter3D(data, trueLabels, path=step5ResultsFolder / f"{N_COMPONENTS}_dims_{title}_gsScatter.png")
+            Visualizer.labeledScatter3D(data, predictedLabels, path=step5ResultsFolder / f"{N_COMPONENTS}_dims_{title}_kmeansScatter.png")
+            Visualizer.labeledScatter3D(tsneData, trueLabels, path=step5ResultsFolder / f"{N_COMPONENTS}_dims_{title}_gsScatterTSNE.png")
+            Visualizer.labeledScatter3D(tsneData, predictedLabels, path=step5ResultsFolder / f"{N_COMPONENTS}_dims_{title}_kmeansScatterTSNE.png")
 
     def __computeKmeansMetrics(self, data, predictedLabels, gsLabels, title, basePath, phase4Results):
         metrics = dict()
