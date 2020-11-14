@@ -3,14 +3,19 @@ import argparse
 import warnings
 from pathlib import Path
 import numpy as np
+import pandas as pd
 from sklearn.decomposition import PCA as skPCA
 from sklearn.decomposition import IncrementalPCA
 
-from src.utils import timer
+from src.utils import timer, separateOutput
 from src.dataset import ArffFile
 from src.visualize import Visualizer
 from src.pca import PCA
 from src.kmeans import KMeans
+from sklearn.cluster import KMeans as SKMeans
+from sklearn.metrics import cluster as clusteringMetrics
+from sklearn.metrics import confusion_matrix
+from src.metrics import clusteringMappingMetric, purity_score
 warnings.simplefilter(action='ignore')
 
 N_COMPONENTS = 3
@@ -50,6 +55,7 @@ class Main:
         # return features and labels
         return unsupervisedFeatures, y
 
+    @separateOutput("phase1")
     @timer(print_=True)
     def phase1(self, data, trueLabels):
         step1ResultsFolder = Path(self.config["resultsDir"]) / "phase1"
@@ -76,34 +82,52 @@ class Main:
         Visualizer.labeledScatter3D(reconstructedData[:, dims], trueLabels, path=step1ResultsFolder / f"{N_COMPONENTS}_dims_reconstructedScatter.png")
         return reducedData
 
-
+    @separateOutput("phase3")
     @timer(print_=True)
     def phase3(self, data, trueLabels):
-        step1ResultsFolder = Path(self.config["resultsDir"]) / "phase3"
-        step1ResultsFolder.mkdir(exist_ok=True, parents=True)
+        step3ResultsFolder = Path(self.config["resultsDir"]) / "phase3"
+        step3ResultsFolder.mkdir(exist_ok=True, parents=True)
 
         pca = skPCA(N_COMPONENTS)
         ipca = IncrementalPCA(N_COMPONENTS)
         reducedData = pca.fit_transform(data)
         iReducedData = ipca.fit_transform(data)
 
-        Visualizer.labeledScatter3D(reducedData, trueLabels, path=step1ResultsFolder / f"{N_COMPONENTS}_dims_pcaScatter.png")
-        Visualizer.labeledScatter3D(iReducedData, trueLabels, path=step1ResultsFolder / f"{N_COMPONENTS}_dims_ipcaScatter.png")
+        Visualizer.labeledScatter3D(reducedData, trueLabels, path=step3ResultsFolder / f"{N_COMPONENTS}_dims_pcaScatter.png")
+        Visualizer.labeledScatter3D(iReducedData, trueLabels, path=step3ResultsFolder / f"{N_COMPONENTS}_dims_ipcaScatter.png")
         return reducedData, iReducedData
 
-
+    @separateOutput("phase4")
     @timer(print_=True)
     def phase4(self, originalData, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA, trueLabels):
-        step1ResultsFolder = Path(self.config["resultsDir"]) / "phase4"
-        step1ResultsFolder.mkdir(exist_ok=True, parents=True)
+        step4ResultsFolder = Path(self.config["resultsDir"]) / "phase4"
+        step4ResultsFolder.mkdir(exist_ok=True, parents=True)
 
+        phase4Results = pd.DataFrame(index=["davies_bouldin_score", "adjusted_rand_score", "completeness_score", "purity_score"])
         for title, data in zip(["originalData", "myPCA", "sklearnPCA", "incrementalPCA"], 
                                [originalData, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA]):
-            kMeans = KMeans(**self.config["parameters"]["kMeans"])
-            predictedLabels = kMeans.fitPredict(data)
-            Visualizer.labeledScatter3D(data, trueLabels, path=step1ResultsFolder / f"{N_COMPONENTS}_dims_{title}_gsScatter.png")
-            Visualizer.labeledScatter3D(data, predictedLabels, path=step1ResultsFolder / f"{N_COMPONENTS}_dims_{title}_kmeansScatter.png")
+            kMeans = SKMeans(**self.config["parameters"]["kMeans"])
+            predictedLabels = kMeans.fit_predict(data)
+            phase4Results = self.__computeKmeansMetrics(data, predictedLabels, trueLabels, title, step4ResultsFolder, phase4Results)
+            Visualizer.labeledScatter3D(data, trueLabels, path=step4ResultsFolder / f"{N_COMPONENTS}_dims_{title}_gsScatter.png")
+            Visualizer.labeledScatter3D(data, predictedLabels, path=step4ResultsFolder / f"{N_COMPONENTS}_dims_{title}_kmeansScatter.png")
+        phase4Results.to_csv(step4ResultsFolder / "metric.csv")
 
+    def __computeKmeansMetrics(self, data, predictedLabels, gsLabels, title, basePath, phase4Results):
+        metrics = dict()
+        metrics["davies_bouldin_score"] = clusteringMetrics.davies_bouldin_score(data, predictedLabels)
+        metrics["adjusted_rand_score"] = clusteringMetrics.adjusted_rand_score(gsLabels, predictedLabels)
+        metrics["completeness_score"] = clusteringMetrics.completeness_score(gsLabels, predictedLabels)
+        metrics["purity_score"] = purity_score(gsLabels, predictedLabels)
+        confusionMatrixMapped = clusteringMappingMetric(predictedLabels, gsLabels)
+        confusionMatrix = confusion_matrix(gsLabels, predictedLabels)
+
+        kdf = pd.DataFrame.from_dict(metrics, orient='index', columns=[title])
+        phase4Results = phase4Results.join(kdf)
+
+        np.savetxt(basePath / f"{title}_kmeans_confusionMapping.csv", confusionMatrixMapped, delimiter=",", fmt='%i')
+        np.savetxt(basePath / f"{title}_kmeans_confusion.csv", confusionMatrix, delimiter=",", fmt='%i')
+        return phase4Results
 
 if __name__ == "__main__":
     args = parseArguments()
