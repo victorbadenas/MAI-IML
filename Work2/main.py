@@ -119,7 +119,7 @@ class Main:
         step5ResultsFolder = Path(self.config["resultsDir"]) / "phase5"
         step5ResultsFolder.mkdir(exist_ok=True, parents=True)
 
-        tsneData = TSNE(n_components=N_COMPONENTS).fit_transform(originalData)
+        tsneData = TSNE(n_components=N_COMPONENTS, **self.config["parameters"]['TSNE']).fit_transform(originalData)
         for title, data in zip(["originalData", "myPCA", "sklearnPCA", "incrementalPCA"],
                                [originalData, reducedDataMyPCA, reducedDataskPCA, reducedDataiPCA]):
             kMeans = SKMeans(**self.config["parameters"]["kMeans"])
