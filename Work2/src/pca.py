@@ -37,6 +37,8 @@ class PCA:
         self.eigenVectors = eigenVectors[:, :self.nComponents]
         self.eigenValues = eigenValues[:self.nComponents]
         self.varianceRatios = self.varianceRatios[:self.nComponents]
+        if self.print_:
+            print("Variance Ratios for selected components:", self.varianceRatios)
         return self
 
     def sortValuesVectors(self, eigenValues, eigenVectors):
