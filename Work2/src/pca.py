@@ -95,8 +95,7 @@ class PCA:
         return (data@self.eigenVectors.T) + self.mean_
 
     def __computeVarianceRatio(self, eigenValues):
-        variance = (eigenValues ** 2) / (self.nSamples - 1)
-        self.varianceRatios = variance / np.sum(variance)
+        self.varianceRatios = eigenValues / np.sum(eigenValues)
 
 
 if __name__ == "__main__":
