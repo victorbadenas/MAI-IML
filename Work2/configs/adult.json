@@ -11,6 +11,11 @@
             "max_iter": 500,
             "tol": 0.0004,
             "verbose": false
+        },
+        "TSNE": {
+            "perplexity": 30,
+            "early_exaggeration": 12.0,
+            "learning_rate": 200.0
         }
     }
 }
