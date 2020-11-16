@@ -1,8 +1,8 @@
 #!bin/bash
 
-configFiles=$(find configs/*);
+configFiles=$(find configs/*.json);
 
 for configFile in $configFiles; do
-    echo $configFile;
+    echo ===================== $configFile =====================
     python -u main.py -c $configFile
 done;
