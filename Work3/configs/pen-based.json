@@ -1,0 +1,7 @@
+{
+    "path": "datasets/pen-based.arff",
+    "resultsDir": "results/pen-based",
+    "verbose": false,
+    "plotClusters": true,
+    "parameters": {}
+}
