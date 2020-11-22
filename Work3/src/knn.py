@@ -24,7 +24,7 @@ class KNN:
     def __init__(self, n_neighbors=5,
                  *, weights='uniform',
                  metric='minkowski',
-                 mink_r=1, voting=''):
+                 mink_r=1, voting='majority'):
 
         self.__validateParameters(n_neighbors, voting, weights, metric)
         self.k = n_neighbors
@@ -56,12 +56,32 @@ class KNN:
 
     def __validateParameters(self, k, voting, weigths, metric):
         assert k > 0, f"n_neighbors must be positive, not \'{k}\'"
-        assert voting in VOTING, f"voting \'{voting}\'type not supported"
-        assert weigths in WEIGHTS, f"weights \'{weigths}\'type not supported"
-        assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\'type not supported"
+        assert voting in VOTING, f"voting \'{voting}\' type not supported"
+        assert weigths in WEIGHTS, f"weights \'{weigths}\' type not supported"
+        assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\' type not supported"
 
 
 if __name__ == "__main__":
-    data = np.array()
-    knn = KNN()
-    knn.fit(data)
+    import matplotlib.pyplot as plt
+    data = []
+    labels = []
+    data.append(np.random.rand(50, 2) + (1, 1))
+    labels.append(np.zeros((50,)))
+    data.append(np.random.rand(50, 2) + (0, 0))
+    labels.append(np.full((50,), 1))
+    data.append(np.random.rand(50, 2) + (1, 0))
+    labels.append(np.full((50,), 2))
+    data.append(np.random.rand(50, 2) + (0, 1))
+    labels.append(np.full((50,), 3))
+    data = np.vstack(data)
+    labels = np.concatenate(labels)
+    try:
+        knn = KNN()
+        knn.fit(data, labels)
+    except Exception as e:
+        print(e)
+    plt.figure(figsize=(15, 9))
+    for label in np.unique(labels):
+        subData = data[labels == label]
+        plt.scatter(subData[:,0], subData[:,1])
+    plt.show()
