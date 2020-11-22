@@ -26,6 +26,7 @@ class KNN:
                  metric='minkowski',
                  mink_r=1, voting=''):
 
+        self.validateParameters(n_neighbors, voting, weights, metric)
         self.k = n_neighbors
         self.voting = voting
         self.weights = weights
@@ -48,6 +49,15 @@ class KNN:
 
     def _predict(self, X):
         raise NotImplementedError
+
+    def computeDistanceMatrix(self, X):
+        return cdist(X, self.trainX, metric=self.metric)
+
+    def validateParameters(self, k, voting, weigths, metric):
+        assert k > 0, f"n_neighbors must be positive, not \'{k}\'"
+        assert voting in VOTING, f"voting \'{voting}\'type not supported"
+        assert weigths in WEIGHTS, f"weights \'{weigths}\'type not supported"
+        assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\'type not supported"
 
 
 if __name__ == "__main__":
