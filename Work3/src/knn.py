@@ -49,7 +49,29 @@ class KNN:
 
     def __predict(self, X):
         distanceMatrix = self.__computeDistanceMatrix(X)
-        raise NotImplementedError
+        knnIndexes = self.__computeKNNIndex(distanceMatrix)
+        knnLabels, weights = self.__extractLabels(knnIndexes, distanceMatrix)
+        decision = self.__decide(knnLabels, weights)
+        return
+
+    def __extractLabels(self, knnIndexes, distanceMatrix):
+        labels = self.trainLabels[knnIndexes]
+        weights = self.__computeWeights(knnIndexes, distanceMatrix)
+        return label, weights
+
+    def __decide(self, knnLabels, weights):
+        # TODO: weights switch and implementation
+        pass
+
+    def __computeWeights(self, knnIndexes, distanceMatrix):
+        # TODO: distance and uniform weigths switch and implementation
+        pass
+
+    def __computeKNNIndex(self, distanceMatrix):
+        knnIndex = [None]*distanceMatrix.shape[0]
+        for i in range(distanceMatrix.shape[0]):
+            knnIndex[i] = np.argsort(distanceMatrix[i,:])[::-1][:self.k]
+        return np.vstack(knnIndex)
 
     def __computeDistanceMatrix(self, X):
         return cdist(X, self.trainX, metric=self.metric)
@@ -75,13 +97,14 @@ if __name__ == "__main__":
     labels.append(np.full((50,), 3))
     data = np.vstack(data)
     labels = np.concatenate(labels)
-    try:
-        knn = KNN()
-        knn.fit(data, labels)
-    except Exception as e:
-        print(e)
+
+    newData = 2*np.random.rand(10, 2)
     plt.figure(figsize=(15, 9))
     for label in np.unique(labels):
         subData = data[labels == label]
         plt.scatter(subData[:,0], subData[:,1])
+    plt.scatter(newData[:,0], newData[:,1], c='k', marker='x')
     plt.show()
+
+    knn = KNN()
+    pred_labels = knn.fit(data, labels).predict(newData)
