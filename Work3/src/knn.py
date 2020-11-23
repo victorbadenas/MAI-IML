@@ -50,21 +50,16 @@ class KNN:
     def __predict(self, X):
         distanceMatrix = self.__computeDistanceMatrix(X)
         knnIndexes = self.__computeKNNIndex(distanceMatrix)
-        knnLabels, weights = self.__extractLabels(knnIndexes, distanceMatrix)
+        knnLabels = self.__extractLabels(knnIndexes)
         decision = self.__decide(knnLabels, weights)
         return
 
     def __extractLabels(self, knnIndexes, distanceMatrix):
         labels = self.trainLabels[knnIndexes]
-        weights = self.__computeWeights(knnIndexes, distanceMatrix)
-        return label, weights
+        return labels
 
-    def __decide(self, knnLabels, weights):
-        # TODO: weights switch and implementation
-        pass
-
-    def __computeWeights(self, knnIndexes, distanceMatrix):
-        # TODO: distance and uniform weigths switch and implementation
+    def __decide(self, knnLabels):
+        # TODO: voting switch and implementation
         pass
 
     def __computeKNNIndex(self, distanceMatrix):
