@@ -52,7 +52,7 @@ class KNN:
         knnIndexes = self.__computeKNNIndex(distanceMatrix)
         knnLabels = self.__extractLabels(knnIndexes)
         decision = self.__decide(knnLabels, distanceMatrix)
-        return
+        return decision
 
     def __extractLabels(self, knnIndexes):
         labels = self.trainLabels[knnIndexes]
@@ -74,13 +74,17 @@ class KNN:
         numElements = knnLabels.shape[0]
         numClasses = int(self.trainLabels.max()) + 1
         subDistances = distanceMatrix.copy()[:,:self.k]
-        decision = np.full((numElements,), 0)
-        for i in range(numElements):
-            index = np.array(list(range(numClasses)))[:,np.newaxis,np.newaxis]
-            index = np.tile(index, (1, subDistances.shape[0], subDistances.shape[1]))
-            repindex = np.tile(knnLabels[np.newaxis,:], (numClasses, 1, 1))
-            mask = repindex == index
-            
+
+        index3D = np.array(list(range(numClasses)))[:,np.newaxis,np.newaxis]
+        index3D = np.tile(index3D, (1, subDistances.shape[0], subDistances.shape[1]))
+
+        repknnindex = np.tile(knnLabels[np.newaxis,:], (numClasses, 1, 1))
+        mask = repknnindex == index3D
+
+        tmp = subDistances[np.newaxis,:] * mask
+        votes = np.sum(tmp, axis=2).T
+        decision = np.argmax(votes, axis=1)
+
         return decision
 
     def __computeKNNIndex(self, distanceMatrix):
@@ -120,7 +124,8 @@ if __name__ == "__main__":
         subData = data[labels == label]
         plt.scatter(subData[:,0], subData[:,1])
     plt.scatter(newData[:,0], newData[:,1], c='k', marker='x')
-    # plt.show()
+    plt.show()
 
     knn = KNN(weights='distance')
     pred_labels = knn.fit(data, labels).predict(newData)
+    print(pred_labels)
