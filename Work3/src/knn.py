@@ -6,7 +6,8 @@ from utils import convertToNumpy
 # distance metrics
 COSINE = 'cosine'
 MINKOWSKI = 'minkowski'
-DISTANCE_METRICS = [COSINE, MINKOWSKI]
+EUCLIDEAN = 'minkowski2'
+DISTANCE_METRICS = [COSINE, MINKOWSKI, EUCLIDEAN]
 
 # voting options
 MAJORITY = 'majority'
@@ -24,7 +25,7 @@ class KNN:
     def __init__(self, n_neighbors=5,
                  *, weights='uniform',
                  metric='minkowski',
-                 mink_r=1, voting='majority'):
+                 voting='majority'):
 
         self.__validateParameters(n_neighbors, voting, weights, metric)
         self.k = n_neighbors
@@ -94,6 +95,10 @@ class KNN:
         return np.vstack(knnIndex)
 
     def __computeDistanceMatrix(self, X):
+        if self.metric == EUCLIDEAN:
+            return cdist(X, self.trainX, metric=MINKOWSKI, p=2)
+        elif self.metric == MINKOWSKI:
+            return cdist(X, self.trainX, metric=MINKOWSKI, p=1)
         return cdist(X, self.trainX, metric=self.metric)
 
     def __validateParameters(self, k, voting, weigths, metric):
