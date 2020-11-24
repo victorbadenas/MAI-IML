@@ -1,6 +1,7 @@
 import numpy as np
+from sklearn_relief import ReliefF
 from scipy.spatial.distance import cdist
-from utils import convertToNumpy
+from utils import convertToNumpy, ndcorrelate
 eps = np.finfo(float).eps
 
 # distance metrics
@@ -17,8 +18,9 @@ VOTING = [MAJORITY, INVERSE_DISTANCE_WEIGHTED, SHEPARDS_WORK]
 
 # weights
 UNIFORM = 'uniform'
-DISTANCE = 'distance'
-WEIGHTS = [UNIFORM, DISTANCE]
+RELIEFF = "relieff"
+CORRELATION = "correlation"
+WEIGHTS = [UNIFORM, RELIEFF, CORRELATION]
 
 
 class KNN:
@@ -35,6 +37,18 @@ class KNN:
         self.metric = metric
         self.p = p
 
+    def __computeFeatureWeights(self):
+        if self.weights == UNIFORM:
+            self.w = np.ones((self.trainX.shape[1],))
+        elif self.weights == RELIEFF:
+            self.w = ReliefF().fit(self.trainX, self.trainLabels).w_
+        elif self.weights == CORRELATION:
+            self.w = ndcorrelate(self.trainX, self.trainLabels)
+            self.w[self.w < 0] = 0
+            if np.sum(self.w) == 0:
+                print("Correlation weights sum 0, defaulting to uniform weights")
+                self.w = np.ones((self.trainX.shape[1],))
+
     def fit(self, X, y):
         return self.__fit(X, y)
 
@@ -48,6 +62,7 @@ class KNN:
         assert X.shape[0] >= self.k, f"Need a minimum of {self.k} points"
         self.trainX = convertToNumpy(X.copy())
         self.trainLabels = convertToNumpy(y.copy())
+        self.__computeFeatureWeights()
         return self
 
     def __predict(self, X):
@@ -71,13 +86,12 @@ class KNN:
         return self.__computeDecision(knnLabels, votingWeights)
 
     def __computeDecision(self, knnLabels, votingWeights):
-        numElements = knnLabels.shape[0]
         numClasses = int(self.trainLabels.max()) + 1
-        index3D = np.array(list(range(numClasses)))[:,np.newaxis,np.newaxis]
+        index3D = np.array(list(range(numClasses)))[:, np.newaxis, np.newaxis]
         index3D = np.tile(index3D, (1, votingWeights.shape[0], votingWeights.shape[1]))
-        repknnindex = np.tile(knnLabels[np.newaxis,:], (numClasses, 1, 1))
+        repknnindex = np.tile(knnLabels[np.newaxis, :], (numClasses, 1, 1))
 
-        tmp = votingWeights[np.newaxis,:] * (repknnindex == index3D)
+        tmp = votingWeights[np.newaxis, :] * (repknnindex == index3D)
         votes = np.sum(tmp, axis=2).T
         decision = np.argmax(votes, axis=1)
         return decision
@@ -90,10 +104,10 @@ class KNN:
 
     def __computeDistanceMatrix(self, X):
         if self.metric == EUCLIDEAN:
-            return cdist(X, self.trainX, metric=MINKOWSKI, p=2)
+            return cdist(X, self.trainX, metric=MINKOWSKI, p=2, w=self.w)
         elif self.metric == MINKOWSKI:
-            return cdist(X, self.trainX, metric=MINKOWSKI, p=1)
-        return cdist(X, self.trainX, metric=self.metric)
+            return cdist(X, self.trainX, metric=MINKOWSKI, p=1, w=self.w)
+        return cdist(X, self.trainX, metric=self.metric, w=self.w)
 
     def __validateParameters(self, k, p, voting, weigths, metric):
         assert k > 0, f"n_neighbors must be positive, not \'{k}\'"
@@ -103,30 +117,33 @@ class KNN:
         assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\' type not supported"
 
 
-
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     data = []
     labels = []
-    data.append(np.random.rand(50, 2) + (1, 1))
+    data.append(np.random.rand(50, 3) + (1, 1, 1))
     labels.append(np.zeros((50,)))
-    data.append(np.random.rand(50, 2) + (0, 0))
+    data.append(np.random.rand(50, 3) + (0, 0, 0))
     labels.append(np.full((50,), 1))
-    data.append(np.random.rand(50, 2) + (1, 0))
+    data.append(np.random.rand(50, 3) + (1, 0, 1))
     labels.append(np.full((50,), 2))
-    data.append(np.random.rand(50, 2) + (0, 1))
+    data.append(np.random.rand(50, 3) + (0, 1, 1))
     labels.append(np.full((50,), 3))
     data = np.vstack(data)
     labels = np.concatenate(labels)
 
-    newData = 2*np.random.rand(10, 2)
+    newData = 2*np.random.rand(10, 3)
     plt.figure(figsize=(15, 9))
     for label in np.unique(labels):
         subData = data[labels == label]
-        plt.scatter(subData[:,0], subData[:,1])
-    plt.scatter(newData[:,0], newData[:,1], c='k', marker='x')
+        plt.scatter(subData[:, 0], subData[:, 1])
+    plt.scatter(newData[:, 0], newData[:, 1], c='k', marker='x')
     plt.show()
 
-    knn = KNN(voting='sheppards')
-    pred_labels = knn.fit(data, labels).predict(newData)
-    print(pred_labels)
+    for d in DISTANCE_METRICS:
+        for v in VOTING:
+            for w in WEIGHTS:
+                print(f"distance: {d}, voting: {v}, weights: {w}")
+                knn = KNN(metric=d, voting=v, weights=w)
+                pred_labels = knn.fit(data, labels).predict(newData)
+                print(pred_labels)

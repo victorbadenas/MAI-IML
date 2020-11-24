@@ -55,3 +55,10 @@ def l2norm(points, center, axis=0):
     dist = (points - center)**2
     dist = np.sum(dist, axis=1)
     return np.sqrt(dist)
+
+
+def ndcorrelate(X, Y):
+    X = pd.DataFrame(X)
+    X["y"] = pd.Series(Y)
+    corr = X.corr().to_numpy()[-1, :-1]
+    return corr
