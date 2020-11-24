@@ -64,13 +64,10 @@ class KNN:
     def __decide(self, knnLabels, distanceMatrix):
         if self.voting == MAJORITY:
             votingWeights = np.ones_like(knnLabels)
-            # return self.__decideMajority(knnLabels)
         elif self.voting == INVERSE_DISTANCE_WEIGHTED:
             votingWeights = 1 / (distanceMatrix[:, :self.k] + eps) ** self.p
-            # return self.__decideIDW(knnLabels, distanceMatrix)
         elif self.voting == SHEPARDS_WORK:
             votingWeights = np.exp(-1*distanceMatrix[:, :self.k])
-            # return self.__decideShepard(knnLabels, distanceMatrix)
         return self.__computeDecision(knnLabels, votingWeights)
 
     def __computeDecision(self, knnLabels, votingWeights):
