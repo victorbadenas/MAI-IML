@@ -51,16 +51,37 @@ class KNN:
         distanceMatrix = self.__computeDistanceMatrix(X)
         knnIndexes = self.__computeKNNIndex(distanceMatrix)
         knnLabels = self.__extractLabels(knnIndexes)
-        decision = self.__decide(knnLabels, weights)
+        decision = self.__decide(knnLabels, distanceMatrix)
         return
 
-    def __extractLabels(self, knnIndexes, distanceMatrix):
+    def __extractLabels(self, knnIndexes):
         labels = self.trainLabels[knnIndexes]
-        return labels
+        return labels.astype(np.int)
 
-    def __decide(self, knnLabels):
-        # TODO: voting switch and implementation
-        pass
+    def __decide(self, knnLabels, distanceMatrix):
+        if self.weights == UNIFORM:
+            return self.__decideUniform(knnLabels)
+        elif self.weights == DISTANCE:
+            return self.__decideDistance(knnLabels, distanceMatrix)
+
+    def __decideUniform(self, knnLabels):
+        decision = np.full((knnLabels.shape[0],), 0)
+        for i in range(knnLabels.shape[0]):
+            decision[i] = np.argmax(np.bincount(knnLabels[i, :].astype(np.int)))
+        return decision
+
+    def __decideDistance(self, knnLabels, distanceMatrix):
+        numElements = knnLabels.shape[0]
+        numClasses = int(self.trainLabels.max()) + 1
+        subDistances = distanceMatrix.copy()[:,:self.k]
+        decision = np.full((numElements,), 0)
+        for i in range(numElements):
+            index = np.array(list(range(numClasses)))[:,np.newaxis,np.newaxis]
+            index = np.tile(index, (1, subDistances.shape[0], subDistances.shape[1]))
+            repindex = np.tile(knnLabels[np.newaxis,:], (numClasses, 1, 1))
+            mask = repindex == index
+            
+        return decision
 
     def __computeKNNIndex(self, distanceMatrix):
         knnIndex = [None]*distanceMatrix.shape[0]
@@ -99,7 +120,7 @@ if __name__ == "__main__":
         subData = data[labels == label]
         plt.scatter(subData[:,0], subData[:,1])
     plt.scatter(newData[:,0], newData[:,1], c='k', marker='x')
-    plt.show()
+    # plt.show()
 
-    knn = KNN()
+    knn = KNN(weights='distance')
     pred_labels = knn.fit(data, labels).predict(newData)
