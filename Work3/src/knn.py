@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from utils import convertToNumpy
-
+eps = np.finfo(float).eps
 
 # distance metrics
 COSINE = 'cosine'
@@ -25,13 +25,15 @@ class KNN:
     def __init__(self, n_neighbors=5,
                  *, weights='uniform',
                  metric='minkowski',
-                 voting='majority'):
+                 voting='majority',
+                 p=1):
 
-        self.__validateParameters(n_neighbors, voting, weights, metric)
+        self.__validateParameters(n_neighbors, p, voting, weights, metric)
         self.k = n_neighbors
         self.voting = voting
         self.weights = weights
         self.metric = metric
+        self.p = p
 
     def fit(self, X, y):
         return self.__fit(X, y)
@@ -60,32 +62,27 @@ class KNN:
         return labels.astype(np.int)
 
     def __decide(self, knnLabels, distanceMatrix):
-        if self.weights == UNIFORM:
-            return self.__decideUniform(knnLabels)
-        elif self.weights == DISTANCE:
-            return self.__decideDistance(knnLabels, distanceMatrix)
+        if self.voting == MAJORITY:
+            votingWeights = np.ones_like(knnLabels)
+            # return self.__decideMajority(knnLabels)
+        elif self.voting == INVERSE_DISTANCE_WEIGHTED:
+            votingWeights = 1 / (distanceMatrix[:, :self.k] + eps) ** self.p
+            # return self.__decideIDW(knnLabels, distanceMatrix)
+        elif self.voting == SHEPARDS_WORK:
+            votingWeights = np.exp(-1*distanceMatrix[:, :self.k])
+            # return self.__decideShepard(knnLabels, distanceMatrix)
+        return self.__computeDecision(knnLabels, votingWeights)
 
-    def __decideUniform(self, knnLabels):
-        decision = np.full((knnLabels.shape[0],), 0)
-        for i in range(knnLabels.shape[0]):
-            decision[i] = np.argmax(np.bincount(knnLabels[i, :].astype(np.int)))
-        return decision
-
-    def __decideDistance(self, knnLabels, distanceMatrix):
+    def __computeDecision(self, knnLabels, votingWeights):
         numElements = knnLabels.shape[0]
         numClasses = int(self.trainLabels.max()) + 1
-        subDistances = distanceMatrix.copy()[:,:self.k]
-
         index3D = np.array(list(range(numClasses)))[:,np.newaxis,np.newaxis]
-        index3D = np.tile(index3D, (1, subDistances.shape[0], subDistances.shape[1]))
-
+        index3D = np.tile(index3D, (1, votingWeights.shape[0], votingWeights.shape[1]))
         repknnindex = np.tile(knnLabels[np.newaxis,:], (numClasses, 1, 1))
-        mask = repknnindex == index3D
 
-        tmp = subDistances[np.newaxis,:] * mask
+        tmp = votingWeights[np.newaxis,:] * (repknnindex == index3D)
         votes = np.sum(tmp, axis=2).T
         decision = np.argmax(votes, axis=1)
-
         return decision
 
     def __computeKNNIndex(self, distanceMatrix):
@@ -101,11 +98,13 @@ class KNN:
             return cdist(X, self.trainX, metric=MINKOWSKI, p=1)
         return cdist(X, self.trainX, metric=self.metric)
 
-    def __validateParameters(self, k, voting, weigths, metric):
+    def __validateParameters(self, k, p, voting, weigths, metric):
         assert k > 0, f"n_neighbors must be positive, not \'{k}\'"
+        assert p > 0 and isinstance(p, int), f"p for distance voting must be a positive int"
         assert voting in VOTING, f"voting \'{voting}\' type not supported"
         assert weigths in WEIGHTS, f"weights \'{weigths}\' type not supported"
         assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\' type not supported"
+
 
 
 if __name__ == "__main__":
@@ -131,6 +130,6 @@ if __name__ == "__main__":
     plt.scatter(newData[:,0], newData[:,1], c='k', marker='x')
     plt.show()
 
-    knn = KNN(weights='distance')
+    knn = KNN(voting='sheppards')
     pred_labels = knn.fit(data, labels).predict(newData)
     print(pred_labels)
