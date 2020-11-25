@@ -55,7 +55,8 @@ class ArffFile:
         self.stringConversion = stringConversion
         self.floatNormalization = floatNormalization
         self.missingDataImputation = missingDataImputation
-        self.labelEncoders = {}
+        self.labelEncoders = dict()
+        self.scalers = dict()
         data, self.metaData = loadarff(arffPath)
         self.formatDataFrame(data)
 
@@ -87,7 +88,7 @@ class ArffFile:
 
     def preprocessDataRanges(self, column, columnType):
         if not (columnType == CATEGORICAL and self.stringConversion == ONEHOT):
-            self.data[column] = self.normalizeFloatColumn(self.data[column])
+            self.data[column] = self.normalizeFloatColumn(self.data[column], column)
 
     def preprocessDataMissingValues(self, column, columnType, columnNames):
         if columnType == CATEGORICAL:
@@ -144,7 +145,7 @@ class ArffFile:
         columnNames[columnNames.index(column):columnNames.index(column)+1] = OHDataFrame.columns.to_list()
         return self.data.drop(column, axis=1).join(OHDataFrame, how='outer')[columnNames]
 
-    def normalizeFloatColumn(self, data):
+    def normalizeFloatColumn(self, data, column):
         if self.floatNormalization == STANDARISATION:
             return scale(data)
         elif self.floatNormalization == MEAN:
@@ -155,6 +156,7 @@ class ArffFile:
             scaler = Normalizer()
         data = np.array(data).reshape(-1, 1)
         data = scaler.fit_transform(data)
+        self.scalers[column] = scaler
         return pd.Series(data.reshape(-1))
 
     def getData(self):
@@ -180,6 +182,36 @@ class ArffFile:
         plt.gcf().subplots_adjust(wspace=0, hspace=0)
         if show:
             plt.show()
+
+
+class TenFoldArffFile:
+    def __init__(self, datasetFolder, fullArffPath, **kwargs):
+        self.datasetFolder = datasetFolder
+        self.fullArffPath = fullArffPath
+        self.trainPaths = self.buildPaths(datasetFolder, 'train')
+        self.testPaths = self.buildPaths(datasetFolder, 'test')
+        self.scalers, self.labelEncoders = self.__loadFullFileScalers(fullArffPath, **kwargs)
+
+    @staticmethod
+    def __loadFullFileScalers(self, fullArffPath, **kwargs):
+        fullArff = ArffFile(fullArffPath, **kwargs)
+        return fullArff.scalers, fullArff.labelEncoders
+
+    @staticmethod
+    def __buildPaths(datasetFolder, subpath):
+        return list(Path(datasetFolder).glob(f"*.fold.{subpath}.arff"))
+
+    def __iter__(self):
+        self.iteridx = 0
+        return self
+
+    def __next__(self):
+        if self.iteridx > len(self.trainPaths):
+            raise StopIteration
+        # load fold
+        self.iteridx += 1
+        return
+
 
 if __name__ == "__main__":
     arffFile = ArffFile(Path("../datasets/adult.arff"))
