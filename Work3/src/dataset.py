@@ -188,6 +188,7 @@ class TenFoldArffFile:
     def __init__(self, datasetFolder, fullArffPath, **kwargs):
         self.datasetFolder = datasetFolder
         self.fullArffPath = fullArffPath
+        self.arffKwargs = kwargs
         self.trainPaths = self.buildPaths(datasetFolder, 'train')
         self.testPaths = self.buildPaths(datasetFolder, 'test')
         self.scalers, self.labelEncoders = self.__loadFullFileScalers(fullArffPath, **kwargs)
@@ -208,9 +209,35 @@ class TenFoldArffFile:
     def __next__(self):
         if self.iteridx > len(self.trainPaths):
             raise StopIteration
-        # load fold
+        trainData, testData = self.__loadTrainTestFoldFile()
         self.iteridx += 1
-        return
+        return trainData, testData
+
+    def __loadTrainTestFoldFile(self):
+        trainPath = self.trainPaths[self.iteridx]
+        testPath = self.testPaths[self.iteridx]
+
+        trainArffData, _ = loadarff(trainPath)
+        testArffData, _ = loadarff(testPath)
+
+        trainDf = self.__formatData(trainArffData)
+        testDf = self.__formatData(testArffData)
+        return trainDf, testDf
+
+    def __formatData(self, arffData):
+        dataDf = pd.DataFrame(arffData)
+        dataDf = dataDf.applymap(bytesToString)
+        for column in dataDf.columns():
+            if column in self.labelEncoders:
+                self.__applyLabelEncoder()
+            if column in self.scalers:
+                self.__applyScaler()
+
+    def __applyLabelEncoder(self):
+        raise NotImplementedError
+
+    def __applyScaler(self):
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
