@@ -48,6 +48,7 @@ class KNN:
             if np.sum(self.w) == 0:
                 print("Correlation weights sum 0, defaulting to uniform weights")
                 self.w = np.ones((self.trainX.shape[1],))
+        self.w = self.w / self.w.max()
 
     def fit(self, X, y):
         return self.__fit(X, y)
