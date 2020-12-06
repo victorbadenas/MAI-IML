@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn_relief import ReliefF
 from scipy.spatial.distance import cdist
-from utils import convertToNumpy, ndcorrelate
+from .utils import convertToNumpy, ndcorrelate
 eps = np.finfo(float).eps
 
 # distance metrics
@@ -23,7 +23,7 @@ CORRELATION = "correlation"
 WEIGHTS = [UNIFORM, RELIEFF, CORRELATION]
 
 
-class KNN:
+class kNNAlgorithm:
     def __init__(self, n_neighbors=5,
                  *, weights='uniform',
                  metric='minkowski',
@@ -100,7 +100,7 @@ class KNN:
     def __computeKNNIndex(self, distanceMatrix):
         knnIndex = [None]*distanceMatrix.shape[0]
         for i in range(distanceMatrix.shape[0]):
-            knnIndex[i] = np.argsort(distanceMatrix[i,:])[::-1][:self.k]
+            knnIndex[i] = np.argsort(distanceMatrix[i,:])[:self.k]
         return np.vstack(knnIndex)
 
     def __computeDistanceMatrix(self, X):
@@ -145,6 +145,6 @@ if __name__ == "__main__":
         for v in VOTING:
             for w in WEIGHTS:
                 print(f"distance: {d}, voting: {v}, weights: {w}")
-                knn = KNN(metric=d, voting=v, weights=w)
+                knn = kNNAlgorithm(metric=d, voting=v, weights=w)
                 pred_labels = knn.fit(data, labels).predict(newData)
                 print(pred_labels)

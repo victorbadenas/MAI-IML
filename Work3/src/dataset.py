@@ -8,6 +8,13 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.preprocessing import scale, StandardScaler, MinMaxScaler, Normalizer, LabelEncoder, OneHotEncoder
 
+
+DATASET_FOLDER = '10fdatasets/'
+
+#Iteration Status
+OK = 1
+KO = 0
+
 # NumPy Data types
 CATEGORICAL = 'O'
 
@@ -49,7 +56,7 @@ class ArffFile:
         maps: dictionary with mapping information from string to int or OneHotVector
 
     """
-    def __init__(self, arffPath, stringConversion=INT, floatNormalization=MIN_MAX, missingDataImputation=IMPUTE_MOST_FREQUENT):
+    def __init__(self, arffPath, stringConversion=INT, floatNormalization=MIN_MAX, missingDataImputation=IMPUTE_MOST_FREQUENT, arffData=None):
         self.assertInitParameters(stringConversion, floatNormalization, missingDataImputation)
         self.path = arffPath
         self.stringConversion = stringConversion
@@ -57,7 +64,10 @@ class ArffFile:
         self.missingDataImputation = missingDataImputation
         self.labelEncoders = dict()
         self.scalers = dict()
-        data, self.metaData = loadarff(arffPath)
+        if arffData is None:
+            data, self.metaData = loadarff(arffPath)
+        else:
+            data, self.metaData = arffData, None
         self.formatDataFrame(data)
 
     def assertInitParameters(self, stringConversion, floatNormalization, missingDataImputation):
@@ -96,6 +106,9 @@ class ArffFile:
                 if '?' in self.labelEncoders[column].classes_:
                     missingValue = self.labelEncoders[column].transform(["?"])[0]
                     self.data[column] = self.fixMissingValues(column, self.data[column], columnNames, missingValue)
+        else:
+            if any(np.isnan(self.data[column])):
+                self.data[column] = self.fixMissingValues(column, self.data[column], columnNames, np.nan)
 
     def formatGoldStandard(self, gsColumn):
         self.data[gsColumn] = self.convertStringsToInt(gsColumn, self.data[gsColumn])
@@ -185,41 +198,32 @@ class ArffFile:
 
 
 class TenFoldArffFile:
-    def __init__(self, datasetFolder, fullArffPath, **kwargs):
-        self.datasetFolder = datasetFolder
-        self.fullArffPath = fullArffPath
-        self.arffKwargs = kwargs
-        self.trainPaths = self.buildPaths(datasetFolder, 'train')
-        self.testPaths = self.buildPaths(datasetFolder, 'test')
-        self.scalers, self.labelEncoders = self.__loadFullFileScalers(fullArffPath, **kwargs)
-
-    @staticmethod
-    def __loadFullFileScalers(self, fullArffPath, **kwargs):
-        fullArff = ArffFile(fullArffPath, **kwargs)
-        return fullArff.scalers, fullArff.labelEncoders
-
-    @staticmethod
-    def __buildPaths(datasetFolder, subpath):
-        return list(Path(datasetFolder).glob(f"*.fold.{subpath}.arff"))
-
-    def __iter__(self):
+    def __init__(self, datasetName, **kwargs):
         self.iteridx = 0
-        return self
+        self.TrainMatrix = None
+        self.TestMatrix = None
+        self.trainPaths = self.__buildPaths(datasetName, 'train')
+        self.testPaths = self.__buildPaths(datasetName, 'test')
+        self.fullArff = self.__loadFullFileScalers(**kwargs)
 
-    def __next__(self):
-        if self.iteridx > len(self.trainPaths):
-            raise StopIteration
-        trainData, testData = self.__loadTrainTestFoldFile()
+    def __buildPaths(self, datasetName, mode):
+        return sorted(Path(DATASET_FOLDER + datasetName).glob(f"{datasetName}.fold.*.{mode}.arff"))
+
+    def __loadFullFileScalers(self, **kwargs):
+        arffData = np.concatenate([loadarff(self.trainPaths[0])[0], loadarff(self.testPaths[0])[0]])
+        fullArff = ArffFile(None, arffData=arffData, **kwargs)
+        return fullArff
+
+    def loadNextFold(self):
+        if self.iteridx >= len(self.trainPaths):
+            return KO
+        self.TrainMatrix, self.TestMatrix = self.__loadTrainTestFoldFile()
         self.iteridx += 1
-        return trainData, testData
+        return OK
 
     def __loadTrainTestFoldFile(self):
-        trainPath = self.trainPaths[self.iteridx]
-        testPath = self.testPaths[self.iteridx]
-
-        trainArffData, _ = loadarff(trainPath)
-        testArffData, _ = loadarff(testPath)
-
+        trainArffData, _ = loadarff(self.trainPaths[self.iteridx])
+        testArffData, _ = loadarff(self.testPaths[self.iteridx])
         trainDf = self.__formatData(trainArffData)
         testDf = self.__formatData(testArffData)
         return trainDf, testDf
@@ -227,17 +231,34 @@ class TenFoldArffFile:
     def __formatData(self, arffData):
         dataDf = pd.DataFrame(arffData)
         dataDf = dataDf.applymap(bytesToString)
-        for column in dataDf.columns():
-            if column in self.labelEncoders:
-                self.__applyLabelEncoder()
-            if column in self.scalers:
-                self.__applyScaler()
+        columnNames = dataDf.columns.to_list()
+        for column in dataDf.columns.to_list():
+            if column in self.fullArff.labelEncoders:
+                dataDf[column] = self.__applyLabelEncoder(dataDf[column], column)
+            dataDf[column] = self.__fixMissingValues(dataDf[column], column, columnNames)
+            if column in self.fullArff.scalers:
+                dataDf[column] = self.__applyScaler(dataDf[column], column)
+        return dataDf
 
-    def __applyLabelEncoder(self):
-        raise NotImplementedError
+    def __applyLabelEncoder(self, columnData, column):
+        return self.fullArff.labelEncoders[column].transform(columnData).astype(np.int)
 
-    def __applyScaler(self):
-        raise NotImplementedError
+    def __fixMissingValues(self, columnData, column, columnNames):
+        if columnData.dtype.kind == CATEGORICAL:
+            if '?' in self.fullArff.labelEncoders[column].classes_:
+                missingValue = self.fullArff.labelEncoders[column].transform(["?"])[0]
+                return self.fullArff.fixMissingValues(column, columnData, columnNames, missingValue)
+        else:
+            if any(np.isnan(columnData)):
+                return self.fullArff.fixMissingValues(column, columnData, columnNames, np.nan)
+        return columnData
+
+    def __applyScaler(self, columnData, column):
+        if self.fullArff.floatNormalization == STANDARISATION:
+            return scale(columnData)
+        data = np.array(columnData).reshape(-1, 1)
+        data = self.fullArff.scalers[column].transform(data)
+        return pd.Series(data.reshape(-1))
 
 
 if __name__ == "__main__":
