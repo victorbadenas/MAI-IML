@@ -88,14 +88,12 @@ class kNNAlgorithm:
 
     def __computeDecision(self, knnLabels, votingWeights):
         numClasses = int(self.trainLabels.max()) + 1
-        index3D = np.array(list(range(numClasses)))[:, np.newaxis, np.newaxis]
-        index3D = np.tile(index3D, (1, votingWeights.shape[0], votingWeights.shape[1]))
-        repknnindex = np.tile(knnLabels[np.newaxis, :], (numClasses, 1, 1))
-
-        tmp = votingWeights[np.newaxis, :] * (repknnindex == index3D)
-        votes = np.sum(tmp, axis=2).T
-        decision = np.argmax(votes, axis=1)
-        return decision
+        votes = np.empty((numClasses, *knnLabels.shape), dtype=int)
+        for classNum in range(numClasses):
+            votes[classNum] = np.where(knnLabels == classNum, 1, 0)
+        weightedVotes = np.expand_dims(votingWeights, axis=0) * votes
+        finalVotesPerClass = np.sum(weightedVotes, axis=2).T
+        return np.argmax(finalVotesPerClass, axis=1)
 
     def __computeKNNIndex(self, distanceMatrix):
         knnIndex = [None]*distanceMatrix.shape[0]
