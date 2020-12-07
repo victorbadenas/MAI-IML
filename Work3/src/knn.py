@@ -115,6 +115,13 @@ class kNNAlgorithm:
         assert weigths in WEIGHTS, f"weights \'{weigths}\' type not supported"
         assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\' type not supported"
 
+    def get_params(self, deep=True):
+        return {'n_neighbors': 5, 'weights': 'uniform', 'metric': 'minkowski', 'voting': 'majority', 'p': 1}
+
+    def set_params(self, **params):
+        for key, value in params.items():
+            setattr(self, key, value)
+        return self
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
