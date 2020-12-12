@@ -98,7 +98,7 @@ class kNNAlgorithm:
     def __computeKNNIndex(self, distanceMatrix):
         knnIndex = [None]*distanceMatrix.shape[0]
         for i in range(distanceMatrix.shape[0]):
-            knnIndex[i] = np.argsort(distanceMatrix[i,:])[:self.k]
+            knnIndex[i] = np.argsort(distanceMatrix[i, :])[:self.k]
         return np.vstack(knnIndex)
 
     def __computeDistanceMatrix(self, X):
@@ -122,6 +122,7 @@ class kNNAlgorithm:
         for key, value in params.items():
             setattr(self, key, value)
         return self
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
