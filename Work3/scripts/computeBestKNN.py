@@ -1,14 +1,29 @@
 import sys
 sys.path.append(".")
-
 import time
 import glob
+import logging
+import numpy as np
 from pathlib import Path
 from src.dataset import TenFoldArffFile
-from src.knn import kNNAlgorithm, COSINE, EUCLIDEAN, VOTING, WEIGHTS, UNIFORM
+from src.knn import kNNAlgorithm, DISTANCE_METRICS, COSINE, EUCLIDEAN, VOTING, WEIGHTS, UNIFORM, CORRELATION
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
+from itertools import product
+import pandas as pd
+from src.utils import getSizeOfObject, total_size
+
+
+def set_logger(log_file_path, debug=False):
+    level = logging.DEBUG if debug else logging.INFO
+    logging_format = '[%(asctime)s][%(filename)s(%(lineno)d):%(funcName)s]-%(levelname)s: %(message)s'
+    log_file_path.parent.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename=log_file_path, level=level, format=logging_format)
+    consoleHandler = logging.StreamHandler(sys.stdout)
+    consoleHandler.setFormatter(logging.Formatter(logging_format))
+    logging.getLogger().addHandler(consoleHandler)
+
 
 def runDataset(dataset, parameters):
     accuracies, efficiencies = [], []
@@ -19,6 +34,7 @@ def runDataset(dataset, parameters):
         accuracies.append(accuracy)
         efficiencies.append(efficiency)
     return sum(accuracies) / len(accuracies), sum(efficiencies) / len(efficiencies)
+
 
 def getFoldData(tenFold):
     trainData = tenFold.TrainMatrix
@@ -33,12 +49,13 @@ def getFoldData(tenFold):
     yTest = tenFold.TestMatrix[labelColumn]
     return xTrain, yTrain, xTest, yTest
 
+
 def runkNN(xTrain, yTrain, xTest, yTest, parameters):
-    #start = time.time()
-    #yPred = kNNAlgorithm().fit(xTrain.to_numpy(), yTrain.to_numpy()).predict(xTest.to_numpy())
-    #efficiency = time.time() - start
-    #accuracy = accuracy_score(yTest, yPred)
-    #return accuracy, efficiency
+    # start = time.time()
+    # yPred = kNNAlgorithm().fit(xTrain.to_numpy(), yTrain.to_numpy()).predict(xTest.to_numpy())
+    # efficiency = time.time() - start
+    # accuracy = accuracy_score(yTest, yPred)
+    # return accuracy, efficiency
     clf = GridSearchCV(kNNAlgorithm(), parameters, scoring='accuracy')
     clf.fit(xTrain.to_numpy(), yTrain.to_numpy())
 
@@ -59,18 +76,71 @@ def runkNN(xTrain, yTrain, xTest, yTest, parameters):
     return 0, 0
 
 
+def loopOverParameters(dataset, parameters):
+    dataframeColumns = ['fold', 'accuracy', 'trainTime', 'testTime', 'storage', 'parameters']
+    results = [pd.DataFrame(columns=dataframeColumns)]*len(parameters)
+    for setupIdx, parameterSetup in enumerate(parameters):
+        logging.info(f"Now evaluating parameter setup: {parameterSetup}")
+        parameterKeys = parameterSetup.keys()
+        parameterList = [p for _, p in parameterSetup.items()]
+        parameterCombinations = list(product(*parameterList))
+
+        for paramIdx, parameterCombination in enumerate(parameterCombinations):
+            tenFold = TenFoldArffFile(dataset)
+            parameterdict = dict(zip(parameterKeys, parameterCombination))
+            logging.info(f"Now evaluating combination {paramIdx+1}/{len(parameterCombinations)}: {parameterdict}")
+
+            foldIdx = 0
+            while tenFold.loadNextFold():
+                xTrain, yTrain, xTest, yTest = getFoldData(tenFold)
+
+                st = time.time()
+                knn = kNNAlgorithm(**parameterdict).fit(xTrain.to_numpy(), yTrain.to_numpy())
+                trainTime = time.time() - st
+
+                st = time.time()
+                pred = knn.predict(xTest)
+                testTime = time.time() - st
+
+                accuracy = np.average(pred == yTest)
+                storage = getSizeOfObject(knn)
+
+                foldResults = pd.DataFrame(np.array([[foldIdx, accuracy, trainTime, testTime, storage, parameterdict]]), columns=dataframeColumns)
+                results[setupIdx] = results[setupIdx].append(foldResults, ignore_index=True)
+
+                foldIdx += 1
+
+    return results
+
+
 # NOTE: Sembla que si computo el GridSearch incloent tots els testos triga mil anys i per això està comentat
 # TODO: For the evaluation, you will use a T-Test or another statistical method (llegir paper T-Test)
 # NOTE 2: No sé si hi ha alguna manera d'extreure la metrica de 'temps' dins el GridSearch
 if __name__ == "__main__":
-    #datasets = [Path(path).stem for path in glob.glob("10fdatasets/*")]
+    # datasets = [Path(path).stem for path in glob.glob("10fdatasets/*")]
+    set_logger(Path('log/bestKnn.log'), debug=True)
+    resultsPath = Path('./results/best_knn')
+    resultsPath.mkdir(parents=True, exist_ok=True)
+    
     datasets = ["autos"]
-    #parameters = [{'n_neighbors': [1, 3, 5, 7], 'weights': WEIGHTS, 'voting': VOTING},
-    #              {'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': WEIGHTS, 'voting': VOTING, 'p': [2]},
-    #              {'n_neighbors': [1, 3, 5, 7], 'metric': [COSINE], 'weights': WEIGHTS, 'voting': VOTING}]]
-    parameters = [{'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': [UNIFORM], 'voting': VOTING, 'p': [2]}]
+    # parameters = [{'n_neighbors': [1, 3, 5, 7], 'weights': WEIGHTS, 'voting': VOTING},
+    #               {'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': WEIGHTS, 'voting': VOTING, 'p': [2]},
+    #               {'n_neighbors': [1, 3, 5, 7], 'metric': [COSINE], 'weights': WEIGHTS, 'voting': VOTING}]]
+    # parameters = [{'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': [UNIFORM], 'voting': VOTING, 'p': [2]}]
+    parameters = [{'n_neighbors': [1, 7], 'metric': DISTANCE_METRICS, 'weights': [UNIFORM], 'voting': VOTING, 'p': [2]}]
     accuracies, efficiencies = {}, {}
     for dataset in datasets:
-        accuracy, efficiency = runDataset(dataset, parameters)
-        accuracies[dataset] = accuracy
-        efficiencies[dataset] = efficiency
+        logging.info(f"Now finding best parameters for {dataset} dataset")
+
+        results_list = loopOverParameters(dataset, parameters)
+
+        logging.info(f"Best parameters for {dataset} dataset: ")
+        for idx, resultDf in enumerate(results_list):
+            logging.info(f"Parameter config no {idx}:")
+            logging.info(resultDf)
+            resultDf.to_csv(resultsPath / f"{idx}.tsv", sep='\t')
+        logging.info("-"*80)
+
+        # accuracy, efficiency = runDataset(dataset, parameters)
+        # accuracies[dataset] = accuracy
+        # efficiencies[dataset] = efficiency
