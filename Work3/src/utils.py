@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import time
+import sys
 
 
 def bytesToString(bytesObject):
@@ -62,3 +63,13 @@ def ndcorrelate(X, Y):
     X["y"] = pd.Series(Y)
     corr = X.corr().to_numpy()[-1, :-1]
     return corr
+
+
+def getSizeOfObject(obj):
+    size = 0.0
+    if hasattr(obj, '__dict__'):
+        for _, v in obj.__dict__.items():
+            size += getSizeOfObject(v)
+    elif isinstance(obj, (int, float, str, np.ndarray)):
+        size += sys.getsizeof(obj)
+    return size
