@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from collections import Iterable
 import time
 import sys
 
@@ -67,9 +68,15 @@ def ndcorrelate(X, Y):
 
 def getSizeOfObject(obj):
     size = 0.0
-    if hasattr(obj, '__dict__'):
+    if hasattr(obj, '__dict__'):  # explore all attributes in a class
         for _, v in obj.__dict__.items():
             size += getSizeOfObject(v)
     elif isinstance(obj, (int, float, str, np.ndarray)):
         size += sys.getsizeof(obj)
+    elif isinstance(obj, dict):
+        for k in obj:
+            size += getSizeOfObject(obj[k])
+    elif isinstance(obj, Iterable):
+        for item in obj:
+            size += getSizeOfObject(item)
     return size
