@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn_relief import ReliefF
 from scipy.spatial.distance import cdist
+from sklearn.feature_selection import mutual_info_classif
 from .utils import convertToNumpy, ndcorrelate
 eps = np.finfo(float).eps
 
@@ -19,8 +20,9 @@ VOTING = [MAJORITY, INVERSE_DISTANCE_WEIGHTED, SHEPARDS_WORK]
 # weights
 UNIFORM = 'uniform'
 RELIEFF = "relieff"
+MUTUAL_INFO = 'mutual_info'
 CORRELATION = "correlation"
-WEIGHTS = [UNIFORM, RELIEFF, CORRELATION]
+WEIGHTS = [UNIFORM, MUTUAL_INFO, CORRELATION]
 
 
 class kNNAlgorithm:
@@ -42,6 +44,8 @@ class kNNAlgorithm:
             self.w = np.ones((self.trainX.shape[1],))
         elif self.weights == RELIEFF:
             self.w = ReliefF().fit(self.trainX, self.trainLabels).w_
+        elif self.weights == MUTUAL_INFO:
+            self.w = mutual_info_classif(self.trainX, self.trainLabels)
         elif self.weights == CORRELATION:
             self.w = ndcorrelate(self.trainX, self.trainLabels)
             self.w[self.w < 0] = 0
