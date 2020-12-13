@@ -25,10 +25,9 @@ STRING_CONVERSION = [INT, ONEHOT]
 
 # Float Normalization Methods
 MIN_MAX = "min-max"
-STANDARISATION = "stardardisation"
 MEAN = "mean"
 UNIT = "unit"
-FLOAT_NORMALIZATION = [MIN_MAX, STANDARISATION, MEAN, UNIT]
+FLOAT_NORMALIZATION = [MIN_MAX, MEAN, UNIT]
 
 # Missing Data Imputation Methods
 IMPUTE_MOST_FREQUENT = "most_frequent"
@@ -64,6 +63,7 @@ class ArffFile:
         self.missingDataImputation = missingDataImputation
         self.labelEncoders = dict()
         self.scalers = dict()
+        self.missingLabelImputers = dict()
         if arffData is None:
             data, self.metaData = loadarff(arffPath)
         else:
@@ -121,20 +121,22 @@ class ArffFile:
 
     def fixMissingValues(self, column, columnData, columnNames, missingValue):
         if self.missingDataImputation == RANDOM:
-            return self.randomMissingValues(columnData, missingValue)
+            return self.randomMissingValues(columnData, missingValue, column)
         elif self.missingDataImputation in [IMPUTE_MOST_FREQUENT, IMPUTE_MEDIAN, IMPUTE_MEAN, IMPUTE_CONSTANT]:
-            return self.imputerMissingValues(columnData, missingValue)
+            return self.imputerMissingValues(columnData, missingValue, column)
         elif self.missingDataImputation in [LINEAR_REGRESSION, LOGISTIC_REGRESSION]:
             return self.regressionMissingValues(column, columnData, columnNames, missingValue)
 
-    def randomMissingValues(self, columnData, missingValue):
-        columnData[columnData == missingValue] = np.random.choice(columnData[columnData != missingValue],
-                                                         columnData[columnData == missingValue].count())
+    def randomMissingValues(self, columnData, missingValue, column):
+        missingString = np.random.choice(columnData[columnData != missingValue], columnData[columnData == missingValue].count())
+        columnData[columnData == missingValue] = missingString
+        self.missingLabelImputers[column] = missingString
         return columnData
 
-    def imputerMissingValues(self, columnData, missingValue):
-        columnData = SimpleImputer(missing_values=missingValue, strategy=self.missingDataImputation) \
-                    .fit_transform(columnData.values.reshape(-1, 1))
+    def imputerMissingValues(self, columnData, missingValue, column):
+        imputer = SimpleImputer(missing_values=missingValue, strategy=self.missingDataImputation)
+        columnData = imputer.fit_transform(columnData.values.reshape(-1, 1))
+        self.missingLabelImputers[column] = imputer
         return columnData.squeeze()
 
     def regressionMissingValues(self, column, columnData, columnNames, missingValue):
@@ -144,6 +146,7 @@ class ArffFile:
         allOtherColumnsData = self.data[features]
         model.fit(X=allOtherColumnsData[columnData != missingValue], y=columnData[columnData != missingValue])
         columnData[columnData == missingValue] = model.predict(allOtherColumnsData[columnData == missingValue])
+        self.missingLabelImputers[column] = model
         return columnData
 
     def convertStringsToInt(self, column, columnData):
@@ -159,9 +162,7 @@ class ArffFile:
         return self.data.drop(column, axis=1).join(OHDataFrame, how='outer')[columnNames]
 
     def normalizeFloatColumn(self, data, column):
-        if self.floatNormalization == STANDARISATION:
-            return scale(data)
-        elif self.floatNormalization == MEAN:
+        if self.floatNormalization == MEAN:
             scaler = StandardScaler()
         elif self.floatNormalization == MIN_MAX:
             scaler = MinMaxScaler()
@@ -245,17 +246,28 @@ class TenFoldArffFile:
 
     def __fixMissingValues(self, columnData, column, columnNames):
         if columnData.dtype.kind == CATEGORICAL:
-            if '?' in self.fullArff.labelEncoders[column].classes_:
-                missingValue = self.fullArff.labelEncoders[column].transform(["?"])[0]
-                return self.fullArff.fixMissingValues(column, columnData, columnNames, missingValue)
+            if '?' in self.fullArff.labelEncoders[column].classes_ and '?' in self.columnData:
+                imputer = self.fullArff.missingLabelImputers[column]
+                if isinstance(imputer, str):
+                    columnData[columnData == '?'] = imputer
+                elif isinstance(imputer, SimpleImputer):
+                    columnData = imputer.transform(columnData.to_numpy().reshape(-1, 1))
+                    columnData = pd.Series(columnData.squeeze())
+                elif isinstance(imputer, (LogisticRegression, LinearRegression)):
+                    columnData[columnData == '?'] = imputer.predict(columnData[columnData == '?'])
         else:
             if any(np.isnan(columnData)):
-                return self.fullArff.fixMissingValues(column, columnData, columnNames, np.nan)
+                imputer = self.fullArff.missingLabelImputers[column]
+                if isinstance(imputer, str):
+                    columnData[columnData == np.nan] = imputer
+                elif isinstance(imputer, SimpleImputer):
+                    columnData = imputer.transform(columnData.to_numpy().reshape(-1, 1))
+                    columnData = pd.Series(columnData.squeeze())
+                elif isinstance(imputer, (LogisticRegression, LinearRegression)):
+                    columnData[columnData == np.nan] = imputer.predict(columnData[columnData == np.nan])
         return columnData
 
     def __applyScaler(self, columnData, column):
-        if self.fullArff.floatNormalization == STANDARISATION:
-            return scale(columnData)
         data = np.array(columnData).reshape(-1, 1)
         data = self.fullArff.scalers[column].transform(data)
         return pd.Series(data.reshape(-1))
