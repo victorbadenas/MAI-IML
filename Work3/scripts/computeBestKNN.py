@@ -9,10 +9,11 @@ from src.dataset import TenFoldArffFile
 from src.knn import kNNAlgorithm, DISTANCE_METRICS, COSINE, EUCLIDEAN, VOTING, WEIGHTS, UNIFORM, CORRELATION
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, PredefinedSplit
 from itertools import product
 import pandas as pd
-from src.utils import getSizeOfObject, total_size
+from src.utils import getSizeOfObject
+
 
 
 def set_logger(log_file_path, debug=False):
@@ -25,15 +26,25 @@ def set_logger(log_file_path, debug=False):
     logging.getLogger().addHandler(consoleHandler)
 
 
-def runDataset(dataset, parameters):
-    accuracies, efficiencies = [], []
+def computePredefinedSplit(dataset, parameters):
     tenFold = TenFoldArffFile(dataset)
+    X = None
+    Y = None
+    foldIdx = 0
     while tenFold.loadNextFold():
         xTrain, yTrain, xTest, yTest = getFoldData(tenFold)
-        accuracy, efficiency = runkNN(xTrain, yTrain, xTest, yTest, parameters)
-        accuracies.append(accuracy)
-        efficiencies.append(efficiency)
-    return sum(accuracies) / len(accuracies), sum(efficiencies) / len(efficiencies)
+        if X is None:
+            X = np.concatenate([xTrain, xTest])
+            Y = np.concatenate([yTrain, yTest])
+            indexes = np.full(X.shape[0], -1)
+        xTrain = xTrain.to_numpy()
+        xTest = xTest.to_numpy()
+        for item in xTest:
+            index = np.where((X == item).all(axis=1))[0]
+            indexes[index] = foldIdx
+        pass
+        foldIdx += 1
+    return X, Y, PredefinedSplit(indexes)
 
 
 def getFoldData(tenFold):
@@ -77,7 +88,7 @@ def runkNN(xTrain, yTrain, xTest, yTest, parameters):
 
 
 def loopOverParameters(dataset, parameters):
-    dataframeColumns = ['fold', 'accuracy', 'trainTime', 'testTime', 'storage', 'parameters']
+    dataframeColumns = ['paramIndex', 'fold', 'accuracy', 'trainTime', 'testTime', 'storage', 'parameters']
     results = [pd.DataFrame(columns=dataframeColumns)]*len(parameters)
     for setupIdx, parameterSetup in enumerate(parameters):
         logging.info(f"Now evaluating parameter setup: {parameterSetup}")
@@ -105,7 +116,7 @@ def loopOverParameters(dataset, parameters):
                 accuracy = np.average(pred == yTest)
                 storage = getSizeOfObject(knn)
 
-                foldResults = pd.DataFrame(np.array([[foldIdx, accuracy, trainTime, testTime, storage, parameterdict]]), columns=dataframeColumns)
+                foldResults = pd.DataFrame(np.array([[paramIdx, foldIdx, accuracy, trainTime, testTime, storage, parameterdict]]), columns=dataframeColumns)
                 results[setupIdx] = results[setupIdx].append(foldResults, ignore_index=True)
 
                 foldIdx += 1
@@ -121,7 +132,7 @@ if __name__ == "__main__":
     set_logger(Path('log/bestKnn.log'), debug=True)
     resultsPath = Path('./results/best_knn')
     resultsPath.mkdir(parents=True, exist_ok=True)
-    
+
     datasets = ["autos"]
     # parameters = [{'n_neighbors': [1, 3, 5, 7], 'weights': WEIGHTS, 'voting': VOTING},
     #               {'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': WEIGHTS, 'voting': VOTING, 'p': [2]},
@@ -131,16 +142,21 @@ if __name__ == "__main__":
     accuracies, efficiencies = {}, {}
     for dataset in datasets:
         logging.info(f"Now finding best parameters for {dataset} dataset")
-
-        results_list = loopOverParameters(dataset, parameters)
-
-        logging.info(f"Best parameters for {dataset} dataset: ")
-        for idx, resultDf in enumerate(results_list):
-            logging.info(f"Parameter config no {idx}:")
-            logging.info(resultDf)
-            resultDf.to_csv(resultsPath / f"{idx}.tsv", sep='\t')
-        logging.info("-"*80)
-
-        # accuracy, efficiency = runDataset(dataset, parameters)
-        # accuracies[dataset] = accuracy
-        # efficiencies[dataset] = efficiency
+        fullDataset, fullLabels, predefinedSplit = computePredefinedSplit(dataset, parameters)
+        logging.info(f"datset loaded with {fullDataset.shape} shape and predefined split computed")
+        gs = GridSearchCV(
+            kNNAlgorithm(),
+            parameters,
+            scoring='accuracy',
+            cv=predefinedSplit,
+            n_jobs=-1,
+            refit=True,
+            verbose=1)
+        gs.fit(fullDataset, fullLabels)
+        logging.info("best model found")
+        knn = gs.best_estimator_
+        memory = getSizeOfObject(knn)
+        logging.info(f"memory used by best model: {memory/1024}kb")
+        resultsDf = pd.DataFrame(gs.cv_results_)
+        resultsDf.to_csv(resultsPath / (dataset + '.tsv'), sep='\t')
+        logging.info(f"results saved to {resultsPath / (dataset + '.tsv')}")
