@@ -1,1 +1,1 @@
-from .ib2 import ib2reduction
+from .ib import ib2, ib3
