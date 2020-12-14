@@ -1,8 +1,12 @@
+import sys
 import numpy as np
 from sklearn_relief import ReliefF
 from scipy.spatial.distance import cdist
 from sklearn.feature_selection import mutual_info_classif
-from .utils import convertToNumpy, ndcorrelate
+sys.path.append('src/')
+
+from utils import convertToNumpy, ndcorrelate
+
 eps = np.finfo(float).eps
 
 # distance metrics
@@ -32,14 +36,14 @@ class kNNAlgorithm:
                  voting='majority',
                  p=1):
 
-        self.__validateParameters(n_neighbors, p, voting, weights, metric)
+        self._validateParameters(n_neighbors, p, voting, weights, metric)
         self.k = n_neighbors
         self.voting = voting
         self.weights = weights
         self.metric = metric
         self.p = p
 
-    def __computeFeatureWeights(self):
+    def _computeFeatureWeights(self):
         if self.weights == UNIFORM:
             self.w = np.ones((self.trainX.shape[1],))
         elif self.weights == RELIEFF:
@@ -55,42 +59,42 @@ class kNNAlgorithm:
         self.w = self.w / self.w.max()
 
     def fit(self, X, y):
-        return self.__fit(X, y)
+        return self._fit(X, y)
 
     def predict(self, X):
-        return self.__predict(X)
+        return self._predict(X)
 
     def fit_predict(self, X, y):
         return self.fit(X, y).predict(X)
 
-    def __fit(self, X, y):
+    def _fit(self, X, y):
         assert X.shape[0] >= self.k, f"Need a minimum of {self.k} points"
         self.trainX = convertToNumpy(X.copy())
         self.trainLabels = convertToNumpy(y.copy())
-        self.__computeFeatureWeights()
+        self._computeFeatureWeights()
         return self
 
-    def __predict(self, X):
-        distanceMatrix = self.__computeDistanceMatrix(X)
-        knnIndexes = self.__computeKNNIndex(distanceMatrix)
-        knnLabels = self.__extractLabels(knnIndexes)
-        decision = self.__decide(knnLabels, distanceMatrix)
+    def _predict(self, X):
+        distanceMatrix = self._computeDistanceMatrix(X)
+        knnIndexes = self._computeKNNIndex(distanceMatrix)
+        knnLabels = self._extractLabels(knnIndexes)
+        decision = self._decide(knnLabels, distanceMatrix)
         return decision
 
-    def __extractLabels(self, knnIndexes):
+    def _extractLabels(self, knnIndexes):
         labels = self.trainLabels[knnIndexes]
         return labels.astype(np.int)
 
-    def __decide(self, knnLabels, distanceMatrix):
+    def _decide(self, knnLabels, distanceMatrix):
         if self.voting == MAJORITY:
             votingWeights = np.ones_like(knnLabels)
         elif self.voting == INVERSE_DISTANCE_WEIGHTED:
             votingWeights = 1 / (distanceMatrix[:, :self.k] + eps) ** self.p
         elif self.voting == SHEPARDS_WORK:
             votingWeights = np.exp(-1*distanceMatrix[:, :self.k])
-        return self.__computeDecision(knnLabels, votingWeights)
+        return self._computeDecision(knnLabels, votingWeights)
 
-    def __computeDecision(self, knnLabels, votingWeights):
+    def _computeDecision(self, knnLabels, votingWeights):
         numClasses = int(self.trainLabels.max()) + 1
         votes = np.empty((numClasses, *knnLabels.shape), dtype=int)
         for classNum in range(numClasses):
@@ -99,20 +103,20 @@ class kNNAlgorithm:
         finalVotesPerClass = np.sum(weightedVotes, axis=2).T
         return np.argmax(finalVotesPerClass, axis=1)
 
-    def __computeKNNIndex(self, distanceMatrix):
+    def _computeKNNIndex(self, distanceMatrix):
         knnIndex = [None]*distanceMatrix.shape[0]
         for i in range(distanceMatrix.shape[0]):
             knnIndex[i] = np.argsort(distanceMatrix[i, :])[:self.k]
         return np.vstack(knnIndex)
 
-    def __computeDistanceMatrix(self, X):
+    def _computeDistanceMatrix(self, X):
         if self.metric == EUCLIDEAN:
             return cdist(X, self.trainX, metric=MINKOWSKI, p=2, w=self.w)
         elif self.metric == MINKOWSKI:
             return cdist(X, self.trainX, metric=MINKOWSKI, p=1, w=self.w)
         return cdist(X, self.trainX, metric=self.metric, w=self.w)
 
-    def __validateParameters(self, k, p, voting, weigths, metric):
+    def _validateParameters(self, k, p, voting, weigths, metric):
         assert k > 0, f"n_neighbors must be positive, not \'{k}\'"
         assert p > 0 and isinstance(p, int), f"p for distance voting must be a positive int"
         assert voting in VOTING, f"voting \'{voting}\' type not supported"
