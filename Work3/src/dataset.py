@@ -6,12 +6,16 @@ from scipy.io.arff import loadarff
 from .utils import bytesToString
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.preprocessing import scale, StandardScaler, MinMaxScaler, Normalizer, LabelEncoder, OneHotEncoder
-
+from sklearn.preprocessing import StandardScaler,\
+                                    MinMaxScaler,\
+                                    Normalizer,\
+                                    LabelEncoder,\
+                                    OneHotEncoder
+import logging
 
 DATASET_FOLDER = '10fdatasets/'
 
-#Iteration Status
+# Iteration Status
 OK = 1
 KO = 0
 
@@ -39,6 +43,7 @@ LINEAR_REGRESSION = "linear_regression"
 LOGISTIC_REGRESSION = "logistic_regression"
 MISSING_DATA_IMPUTATION = [IMPUTE_MOST_FREQUENT, IMPUTE_MEDIAN, IMPUTE_MEAN,
                            IMPUTE_CONSTANT, RANDOM, LINEAR_REGRESSION, LOGISTIC_REGRESSION]
+
 
 class ArffFile:
     """
@@ -211,6 +216,8 @@ class TenFoldArffFile:
         return sorted(Path(DATASET_FOLDER + datasetName).glob(f"{datasetName}.fold.*.{mode}.arff"))
 
     def __loadFullFileScalers(self, **kwargs):
+        logging.info(f"Train_path: {self.trainPaths[0]}")
+        logging.info(f"Test_path: {self.testPaths[0]}")
         arffData = np.concatenate([loadarff(self.trainPaths[0])[0], loadarff(self.testPaths[0])[0]])
         fullArff = ArffFile(None, arffData=arffData, **kwargs)
         return fullArff
