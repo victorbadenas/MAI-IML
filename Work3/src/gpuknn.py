@@ -3,10 +3,10 @@ import numpy as np
 from scipy.spatial.distance import cdist
 import tensorflow as tf
 sys.path.append('src/')
+tf.autograph.set_verbosity(0)
 gpu_devices = tf.config.experimental.list_logical_devices('GPU')
 print("Running with {}".format(gpu_devices[0] if len(gpu_devices) > 0 else 'cpu'))
 
-from utils import timer
 from knn import *
 
 
@@ -16,7 +16,6 @@ class gpukNNAlgorithm(kNNAlgorithm):
             return self._gpuDistanceMatrix(X)
         return self._cpuDistanceMatrix(X)
 
-    @timer(print_=True)
     def _cpuDistanceMatrix(self, X):
         if self.metric == EUCLIDEAN:
             return cdist(X, self.trainX, metric=MINKOWSKI, p=2, w=self.w)
@@ -24,7 +23,6 @@ class gpukNNAlgorithm(kNNAlgorithm):
             return cdist(X, self.trainX, metric=MINKOWSKI, p=1, w=self.w)
         return cdist(X, self.trainX, metric=self.metric, w=self.w)
 
-    @timer(print_=True)
     def _gpuDistanceMatrix(self, X):
         with tf.device('/GPU:0'):
             trainTensor = tf.constant(self.trainX)
