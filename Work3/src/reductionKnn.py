@@ -49,39 +49,52 @@ if __name__ == "__main__":
     from scipy.spatial.distance import cdist
     data = []
     labels = []
-    data.append(np.random.rand(50, 3) - 0.5 + (1, 1, 1))
+    data.append(np.random.rand(50, 2)/2 - 0.25 + (0.75, 0.75))
     labels.append(np.zeros((50,)))
-    data.append(np.random.rand(50, 3) - 0.5 + (0, 0, 0))
+    data.append(np.random.rand(50, 2)/2 - 0.25 + (0.25, 0.25))
     labels.append(np.full((50,), 1))
-    data.append(np.random.rand(50, 3) - 0.5 + (1, 0, 1))
+    data.append(np.random.rand(50, 2)/2 - 0.25 + (0.75, 0.25))
     labels.append(np.full((50,), 2))
-    data.append(np.random.rand(50, 3) - 0.5 + (0, 1, 1))
+    data.append(np.random.rand(50, 2)/2 - 0.25 + (0.25, 0.75))
     labels.append(np.full((50,), 3))
     data = np.vstack(data)
     labels = np.concatenate(labels)
 
-    classgs = np.array([[1, 1, 1], [0, 0, 0], [1, 0, 1], [0, 1, 1]])
-    newData = 1.5*np.random.rand(10, 3)
+    classgs = np.array([[0.75, 0.75], [0.25, 0.25], [0.75, 0.25], [0.25, 0.75]])
+    newData = np.random.rand(10, 2)
     newLabels = np.argmin(cdist(newData, classgs), axis=1)
 
-    fig = plt.figure(figsize=(15, 9))
-    ax = fig.add_subplot(111, projection='3d')
-    for label, c in zip(np.unique(labels), 'rgby'):
-        subData = data[labels == label]
-        subNewData = newData[newLabels == label]
-        ax.scatter(subData[:, 0], subData[:, 1], subData[:, 2], c=c)
-        ax.scatter(subNewData[:, 0], subNewData[:, 1], subNewData[:, 2], c=c, marker='x')
-    ax.scatter(classgs[:, 0], classgs[:, 1], classgs[:, 2], c='k', marker='o')
-    plt.show()
+    def plotModelTrial(trainData, testData, trainLabels, testLabels, classgs):
+        plt.figure(figsize=(15, 9))
+        for label, c in zip(np.unique(trainLabels), 'rgby'):
+            subData = trainData[trainLabels == label]
+            subNewData = testData[testLabels == label]
+            plt.scatter(subData[:, 0], subData[:, 1], c=c, marker='+')
+            plt.scatter(subNewData[:, 0], subNewData[:, 1], c=c, marker='x')
+        # plt.scatter(classgs[:, 0], classgs[:, 1], c='k', marker='o')
+        plt.vlines(0.5, 0, 1, colors='k', linestyles='dashed')
+        plt.hlines(0.5, 0, 1, colors='k', linestyles='dashed')
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+        plt.xticks([i/4 for i in range(5)])
+        plt.yticks([i/4 for i in range(5)])
+        plt.grid('on')
 
-    for d in DISTANCE_METRICS:
-        for v in VOTING:
-            for w in WEIGHTS:
-                for r in REDUCTION_METHODS:
-                    print(f"distance: {d}, voting: {v}, weights: {w}, reduction: {r}")
-                    rknn = reductionKnnAlgorithm(metric=d, voting=v, weights=w, reduction=r)
-                    pred_labels = rknn.fit(data, labels).predict(newData)
-                    accuracy = np.average(newLabels == pred_labels)
-                    print(pred_labels)
-                    print(f"Accuracy: {accuracy}")
+    # plotModelTrial(data, newData, labels, newLabels, classgs)
+    # plt.show()
 
+    # for d in DISTANCE_METRICS:
+    #     for v in VOTING:
+    #         for w in WEIGHTS:
+    for r in REDUCTION_METHODS:
+        print(f"reduction: {r}")
+        rknn = reductionKnnAlgorithm(reduction=r)
+        pred_labels = rknn.fit(data, labels).predict(newData)
+        accuracy = np.average(newLabels == pred_labels)
+        print(pred_labels)
+        print(f"Accuracy: {accuracy}")
+        plotModelTrial(data, newData, labels, newLabels, classgs)
+        for label, c in zip(np.unique(labels), 'rgby'):
+            ibData = rknn.trainX[rknn.trainLabels == label]
+            plt.scatter(ibData[:, 0], ibData[:, 1], c=c, marker='o')
+        plt.show()
