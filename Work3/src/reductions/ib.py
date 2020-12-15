@@ -23,7 +23,7 @@ def ib2(X, labels, rand=True):
     return X[CD], labels[CD]
 
 
-def compute(p, z, n):
+def computeBounds(p, z, n):
     num = p + z**2/(2*n)
     den = 1 + z**2/n
     rad = z * np.sqrt((p*(1-p))/n + (z/(2*n)**2))
@@ -48,8 +48,8 @@ def ib3(X, labels, rand=True):
         label = int(label)
 
         distance = cdist(x[None, :], np.atleast_2d(X[CD])).flatten()
-        acc_low, _ = compute(classificationPositive / classificationAttempts, z_acc, classificationAttempts)
-        _, freq_high = compute(classificationAttempts / np.sum(classificationAttempts), z_acc, classificationAttempts)
+        acc_low, _ = computeBounds(classificationPositive / classificationAttempts, z_acc, classificationAttempts)
+        _, freq_high = computeBounds(classificationAttempts / np.sum(classificationAttempts), z_acc, classificationAttempts)
         acceptable = acc_low - freq_high >= 0
 
         if np.any(acceptable):
@@ -71,8 +71,8 @@ def ib3(X, labels, rand=True):
         classificationPositive += pos
 
         if len(CD) > 1:
-            acc_low, _ = compute(classificationPositive / classificationAttempts, z_rej, classificationAttempts)
-            _, freq_high = compute(classificationAttempts / np.sum(classificationAttempts), z_rej, classificationAttempts)
+            acc_low, _ = computeBounds(classificationPositive / classificationAttempts, z_rej, classificationAttempts)
+            _, freq_high = computeBounds(classificationAttempts / np.sum(classificationAttempts), z_rej, classificationAttempts)
             acceptable = acc_low - freq_high >= 0
             conserve_idx = np.logical_or(~att.astype(bool), acceptable)
             if np.any(conserve_idx):
@@ -80,36 +80,10 @@ def ib3(X, labels, rand=True):
                 classificationAttempts = classificationAttempts[conserve_idx]
                 classificationPositive = classificationPositive[conserve_idx]
 
-    acc_low, _ = compute(classificationPositive / classificationAttempts, z_rej, classificationAttempts)
-    _, freq_high = compute(classificationAttempts / np.sum(classificationAttempts), z_rej, classificationAttempts)
+    acc_low, _ = computeBounds(classificationPositive / classificationAttempts, z_rej, classificationAttempts)
+    _, freq_high = computeBounds(classificationAttempts / np.sum(classificationAttempts), z_rej, classificationAttempts)
     acceptable = acc_low - freq_high >= 0
     if np.any(acceptable):
         CD = CD[acceptable]
 
     return X[CD], labels[CD]
-
-    # for x, label in zip(X[1:], labels[1:]):
-    #     sim = -1*cdist(x[None, :], CD).flatten()
-    #     acceptable = sim >= th
-    #     if np.any(acceptable):
-    #         ymax_idx = np.random.choice(np.where(acceptable)[0])
-    #         print('acceptable')
-    #     else:
-    #         idx = np.random.randint(CD.shape[0])
-    #         sim_sort_idx = np.argsort(sim)
-    #         ymax_idx = sim_sort_idx[-idx]
-    #         print('random')
-    #     if label == cdlabels[ymax_idx]:
-    #         correct = True
-    #         record[ymax_idx] += 1
-    #     else:
-    #         correct = False
-    #         CD = np.concatenate([CD, x[None, :]])
-    #         cdlabels = np.concatenate([cdlabels, np.array(label).reshape(-1)])
-
-    #     sim2 = -1*cdist(x[None, :], CD).flatten()
-    #     y_indexes = np.where(sim2 >= sim[ymax_idx])[0]
-    #     y_to_remove = y_indexes[np.where(record[y_indexes] < 2)[0]]
-    #     CD = np.delete(CD, y_to_remove, axis=0)
-    #     cdlabels = np.delete(cdlabels, y_to_remove)
-    return CD, cdlabels
