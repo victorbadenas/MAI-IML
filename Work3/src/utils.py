@@ -17,7 +17,7 @@ def timer(print_=False):
             st = time.time()
             ret = func(*args, **kwargs)
             if print_:
-                print(f"{func.__name__} ran in {time.time()-st:.2f}s")
+                print(f"{func.__name__} ran in {time.time()-st:.6f}s")
                 return ret
             else:
                 delta = time.time() - st
