@@ -7,7 +7,6 @@ import numpy as np
 from pathlib import Path
 from src.dataset import TenFoldArffFile
 from src.knn import kNNAlgorithm, DISTANCE_METRICS, COSINE, MINKOWSKI, EUCLIDEAN, VOTING, WEIGHTS, UNIFORM, CORRELATION
-from src.matknn import matkNNAlgorithm
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
@@ -140,10 +139,6 @@ if __name__ == "__main__":
     resultsPath = Path('./results/best_knn')
     resultsPath.mkdir(parents=True, exist_ok=True)
     logging.info(datasets)
-    # parameters = [{'n_neighbors': [1, 3, 5, 7], 'weights': WEIGHTS, 'voting': VOTING},
-    #               {'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': WEIGHTS, 'voting': VOTING, 'p': [2]},
-    #               {'n_neighbors': [1, 3, 5, 7], 'metric': [COSINE], 'weights': WEIGHTS, 'voting': VOTING}]]
-    # parameters = [{'n_neighbors': [1, 3, 5, 7], 'metric': [EUCLIDEAN], 'weights': [UNIFORM], 'voting': VOTING, 'p': [2]}]
     parameters = [{'n_neighbors': [1, 3, 5, 7], 'metric': DISTANCE_METRICS, 'weights': WEIGHTS, 'voting': VOTING, 'p': [2]}]
     accuracies, efficiencies = {}, {}
     for dataset in datasets:
@@ -152,13 +147,13 @@ if __name__ == "__main__":
             fullDataset, fullLabels, predefinedSplit = computePredefinedSplit(dataset, parameters)
             logging.info(f"datset loaded with {fullDataset.shape} shape and predefined split computed")
             gs = GridSearchCV(
-                matkNNAlgorithm(),
+                kNNAlgorithm(),
                 parameters,
                 scoring='accuracy',
                 cv=predefinedSplit,
                 n_jobs=-1,
                 refit=True,
-                verbose=1)
+                verbose=3)
             gs.fit(fullDataset, fullLabels)
             logging.info("best model found")
             knn = gs.best_estimator_
