@@ -83,7 +83,13 @@ class ArffFile:
     def formatDataFrame(self, arffData):
         data = pd.DataFrame(arffData)
         self.data = data.applymap(bytesToString) # apply type conversion to all items in DataFrame
+        self.data = self.filterNanColumns(self.data)
         self.formatColumns()
+
+    @staticmethod
+    def filterNanColumns(df):
+        notNanColumnsIdx = np.where(~df.isna().all())[0]
+        return df[df.columns[notNanColumnsIdx]]
 
     def formatColumns(self):
         columnTypes = {}
@@ -216,8 +222,6 @@ class TenFoldArffFile:
         return sorted(Path(DATASET_FOLDER + datasetName).glob(f"{datasetName}.fold.*.{mode}.arff"))
 
     def __loadFullFileScalers(self, **kwargs):
-        logging.info(f"Train_path: {self.trainPaths[0]}")
-        logging.info(f"Test_path: {self.testPaths[0]}")
         arffData = np.concatenate([loadarff(self.trainPaths[0])[0], loadarff(self.testPaths[0])[0]])
         fullArff = ArffFile(None, arffData=arffData, **kwargs)
         return fullArff
@@ -239,6 +243,7 @@ class TenFoldArffFile:
     def __formatData(self, arffData):
         dataDf = pd.DataFrame(arffData)
         dataDf = dataDf.applymap(bytesToString)
+        dataDf = self.fullArff.filterNanColumns(dataDf)
         columnNames = dataDf.columns.to_list()
         for column in dataDf.columns.to_list():
             if column in self.fullArff.labelEncoders:
