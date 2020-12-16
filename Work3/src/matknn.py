@@ -5,9 +5,13 @@ sys.path.append('src/')
 import logging
 
 from knn import *
+from utils import timer
 
+DTYPES = [np.float, np.float16, np.float32, np.float64, np.double]
 
 class matkNNAlgorithm(kNNAlgorithm):
+    dtype = np.float16
+
     def _computeDistanceMatrix(self, X):
         return self._matricialDistanceMatrix(X)
 
@@ -19,13 +23,17 @@ class matkNNAlgorithm(kNNAlgorithm):
         return cdist(X, self.trainX, metric=self.metric, w=self.w)
 
     def _matricialDistanceMatrix(self, X):
+        X = X.astype(self.dtype)
+        self.w = self.w.astype(self.dtype)
+        self.trainX = self.trainX.astype(self.dtype)
+
         if self.metric == COSINE:
             trainX = self.trainX * np.sqrt(self.w)[None, :]
             X = X.copy() * np.sqrt(self.w)[None, :]
             d = X@trainX.T / np.linalg.norm(trainX, axis=1)[None, :] / np.linalg.norm(X, axis=1, keepdims=True)
             d = 1-d
         else:
-            X = np.repeat(X.copy()[None, :], self.trainX.shape[0], axis=0)
+            X = np.repeat(X[None, :], self.trainX.shape[0], axis=0)
             trainX = np.repeat(np.expand_dims(self.trainX.copy(), 1), X.shape[1], axis=1)
             weights = np.repeat(np.expand_dims(self.w.copy(), 0), X.shape[1], axis=0)
             weights = np.repeat(np.expand_dims(weights, 0), X.shape[0], axis=0)
@@ -52,18 +60,18 @@ if __name__ == "__main__":
 
     data = []
     labels = []
-    data.append(np.random.rand(500, N_features)/2 - 0.25 + ((0.75, 0.75) + tuple([0.75]*(N_features-2))))
-    labels.append(np.zeros((500,)))
-    data.append(np.random.rand(500, N_features)/2 - 0.25 + ((0.25, 0.25) + tuple([0.75]*(N_features-2))))
-    labels.append(np.full((500,), 1))
-    data.append(np.random.rand(500, N_features)/2 - 0.25 + ((0.75, 0.25) + tuple([0.75]*(N_features-2))))
-    labels.append(np.full((500,), 2))
-    data.append(np.random.rand(500, N_features)/2 - 0.25 + ((0.25, 0.75) + tuple([0.75]*(N_features-2))))
-    labels.append(np.full((500,), 3))
+    data.append(np.random.rand(10000, N_features)/2 - 0.25 + ((0.75, 0.75) + tuple([0.75]*(N_features-2))))
+    labels.append(np.zeros((10000,)))
+    data.append(np.random.rand(10000, N_features)/2 - 0.25 + ((0.25, 0.25) + tuple([0.75]*(N_features-2))))
+    labels.append(np.full((10000,), 1))
+    data.append(np.random.rand(10000, N_features)/2 - 0.25 + ((0.75, 0.25) + tuple([0.75]*(N_features-2))))
+    labels.append(np.full((10000,), 2))
+    data.append(np.random.rand(10000, N_features)/2 - 0.25 + ((0.25, 0.75) + tuple([0.75]*(N_features-2))))
+    labels.append(np.full((10000,), 3))
     data = np.vstack(data)
     labels = np.concatenate(labels)
 
-    newData = np.random.rand(100, N_features)
+    newData = np.random.rand(10000, N_features)
     newLabels = np.argmin(cdist(newData, classgs), axis=1)
 
     def plotModelTrial(trainData, testData, trainLabels, testLabels, classgs):
@@ -86,7 +94,7 @@ if __name__ == "__main__":
     # plt.show()
 
     print(f"train dataset size: {data.shape}, test dataset size: {newData.shape}")
-    for d in DISTANCE_METRICS:
+    for d in [DISTANCE_METRICS[1]]:
         for v in VOTING:
             for w in WEIGHTS:
                 print(f"now evaluating: distance: {d}, voting: {v}, weights: {w}")
