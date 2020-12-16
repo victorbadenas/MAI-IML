@@ -6,14 +6,14 @@ import logging
 import numpy as np
 from pathlib import Path
 from src.dataset import TenFoldArffFile
-from src.knn import kNNAlgorithm, DISTANCE_METRICS, COSINE, EUCLIDEAN, VOTING, WEIGHTS, UNIFORM, CORRELATION
+from src.knn import kNNAlgorithm, DISTANCE_METRICS, COSINE, MINKOWSKI, EUCLIDEAN, VOTING, WEIGHTS, UNIFORM, CORRELATION
+from src.matknn import matkNNAlgorithm
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
 from itertools import product
 import pandas as pd
 from src.utils import getSizeOfObject
-
 
 
 def set_logger(log_file_path, debug=False):
@@ -42,7 +42,6 @@ def computePredefinedSplit(dataset, parameters):
         for item in xTest:
             index = np.where((X == item).all(axis=1))[0]
             indexes[index] = foldIdx
-        pass
         foldIdx += 1
     return X, Y, PredefinedSplit(indexes)
 
@@ -128,7 +127,14 @@ def loopOverParameters(dataset, parameters):
 # TODO: For the evaluation, you will use a T-Test or another statistical method (llegir paper T-Test)
 # NOTE 2: No sé si hi ha alguna manera d'extreure la metrica de 'temps' dins el GridSearch
 if __name__ == "__main__":
-    datasets = [Path(path).stem for path in glob.glob("10fdatasets/*")]
+    # datasets = [Path(path).stem for path in glob.glob("10fdatasets/*")]
+    datasets = ['adult', 'audiology', 'autos', 'bal', 'connect-4', 'credit-a', 'grid',
+                'hepatitis', 'hypothyroid', 'kropt', 'kr-vs-kp', 'labor', 'mushroom', 'mx',
+                'nursery', 'pen-based', 'satimage', 'sick', 'soybean', 'splice', 'vote', 'vowel']  # all datasets
+    # runnable
+    # datasets = ['grid', "hypothyroid", "kr-vs-kp", "mx", "sick", 'splice']  # LARGE
+    # datasets = ['bal', 'credit-a', 'soybean', 'vowel']  # MEDIUM
+    # datasets = ["audiology", "autos", "labor", "vote"]  # SMALL
 
     set_logger(Path('log/bestKnn.log'), debug=True)
     resultsPath = Path('./results/best_knn')
@@ -141,14 +147,12 @@ if __name__ == "__main__":
     parameters = [{'n_neighbors': [1, 3, 5, 7], 'metric': DISTANCE_METRICS, 'weights': WEIGHTS, 'voting': VOTING, 'p': [2]}]
     accuracies, efficiencies = {}, {}
     for dataset in datasets:
-        if dataset == 'connect-4':
-            continue
         try:
             logging.info(f"Now finding best parameters for {dataset} dataset")
             fullDataset, fullLabels, predefinedSplit = computePredefinedSplit(dataset, parameters)
             logging.info(f"datset loaded with {fullDataset.shape} shape and predefined split computed")
             gs = GridSearchCV(
-                kNNAlgorithm(),
+                matkNNAlgorithm(),
                 parameters,
                 scoring='accuracy',
                 cv=predefinedSplit,
@@ -164,7 +168,6 @@ if __name__ == "__main__":
             resultsDf.to_csv(resultsPath / (dataset + '.tsv'), sep='\t')
             logging.info(f"results saved to {resultsPath / (dataset + '.tsv')}")
         except Exception as e:
-            logging.error(f"Exception thrown whern loading {dataset} dataset")
-            logging.error(e)
+            logging.error(f"Exception thrown whern loading {dataset} dataset", exc_info=e)
             continue
 
