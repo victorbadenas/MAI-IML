@@ -28,20 +28,27 @@ MUTUAL_INFO = 'mutual_info'
 CORRELATION = "correlation"
 WEIGHTS = [UNIFORM, MUTUAL_INFO, CORRELATION]
 
+# distance computation methods
+SCIPY = 'scipy'
+MAT = 'mat'
+DISTANCE_METHODS = [SCIPY, MAT]
+
 
 class kNNAlgorithm:
     def __init__(self, n_neighbors=5,
                  *, weights='uniform',
                  metric='minkowski',
                  voting='majority',
-                 p=1):
+                 p=1,
+                 method='mat'):
 
-        self._validateParameters(n_neighbors, p, voting, weights, metric)
         self.k = n_neighbors
         self.voting = voting
         self.weights = weights
         self.metric = metric
         self.p = p
+        self.method = method
+        self._validateParameters()
 
     def _computeFeatureWeights(self):
         if self.weights == UNIFORM:
@@ -110,18 +117,44 @@ class kNNAlgorithm:
         return np.vstack(knnIndex)
 
     def _computeDistanceMatrix(self, X):
+        if self.method == MAT:
+            return self._matricialDistanceMatrix(X)
+        elif self.method == SCIPY:
+            return self._scipyDistanceMatrix(X)
+
+    def _scipyDistanceMatrix(self, X):
         if self.metric == EUCLIDEAN:
             return cdist(X, self.trainX, metric=MINKOWSKI, p=2, w=self.w)
         elif self.metric == MINKOWSKI:
             return cdist(X, self.trainX, metric=MINKOWSKI, p=1, w=self.w)
         return cdist(X, self.trainX, metric=self.metric, w=self.w)
 
-    def _validateParameters(self, k, p, voting, weigths, metric):
-        assert k > 0, f"n_neighbors must be positive, not \'{k}\'"
-        assert p > 0 and isinstance(p, int), f"p for distance voting must be a positive int"
-        assert voting in VOTING, f"voting \'{voting}\' type not supported"
-        assert weigths in WEIGHTS, f"weights \'{weigths}\' type not supported"
-        assert metric in DISTANCE_METRICS, f"distance metric \'{metric}\' type not supported"
+    def _matricialDistanceMatrix(self, X):
+        if self.metric == COSINE:
+            trainX = self.trainX * np.sqrt(self.w)[None, :]
+            X = X.copy() * np.sqrt(self.w)[None, :]
+            d = X@trainX.T / np.linalg.norm(trainX, axis=1)[None, :] / np.linalg.norm(X, axis=1, keepdims=True)
+            d = 1-d
+        else:
+            X = np.repeat(X[None, :], self.trainX.shape[0], axis=0)
+            trainX = np.repeat(np.expand_dims(self.trainX.copy(), 1), X.shape[1], axis=1)
+            weights = np.repeat(np.expand_dims(self.w.copy(), 0), X.shape[1], axis=0)
+            weights = np.repeat(np.expand_dims(weights, 0), X.shape[0], axis=0)
+            d = trainX - X
+            if self.metric == MINKOWSKI:
+                d = np.sum((weights * np.abs(d)**self.p), axis=2)**(1/self.p)
+            elif self.metric == EUCLIDEAN:
+                d = np.sqrt(np.sum(weights * d ** 2, axis=2))
+            d = d.T
+        return d
+
+    def _validateParameters(self):
+        assert self.k > 0, f"n_neighbors must be positive, not \'{self.k}\'"
+        assert self.p > 0 and isinstance(self.p, int), f"p for distance voting must be a positive int"
+        assert self.voting in VOTING, f"voting \'{self.voting}\' type not supported"
+        assert self.weights in WEIGHTS, f"weights \'{self.weights}\' type not supported"
+        assert self.metric in DISTANCE_METRICS, f"distance metric \'{self.metric}\' type not supported"
+        assert self.method in DISTANCE_METHODS, f"distance computation method \'{self.method}\' not supported"
 
     def get_params(self, deep=True):
         return {'n_neighbors': 5, 'weights': 'uniform', 'metric': 'minkowski', 'voting': 'majority', 'p': 1}
@@ -134,31 +167,57 @@ class kNNAlgorithm:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    from pathlib import Path
+
+    N_features = 2
+    classgs = np.array([
+        ((0.75, 0.75) + tuple([0.75]*(N_features-2))),
+        ((0.25, 0.25) + tuple([0.75]*(N_features-2))),
+        ((0.75, 0.25) + tuple([0.75]*(N_features-2))),
+        ((0.25, 0.75) + tuple([0.75]*(N_features-2)))
+    ])
+
     data = []
     labels = []
-    data.append(np.random.rand(50, 3) + (1, 1, 1))
+    data.append(np.random.rand(50, N_features)/2 - 0.25 + ((0.75, 0.75) + tuple([0.75]*(N_features-2))))
     labels.append(np.zeros((50,)))
-    data.append(np.random.rand(50, 3) + (0, 0, 0))
+    data.append(np.random.rand(50, N_features)/2 - 0.25 + ((0.25, 0.25) + tuple([0.75]*(N_features-2))))
     labels.append(np.full((50,), 1))
-    data.append(np.random.rand(50, 3) + (1, 0, 1))
+    data.append(np.random.rand(50, N_features)/2 - 0.25 + ((0.75, 0.25) + tuple([0.75]*(N_features-2))))
     labels.append(np.full((50,), 2))
-    data.append(np.random.rand(50, 3) + (0, 1, 1))
+    data.append(np.random.rand(50, N_features)/2 - 0.25 + ((0.25, 0.75) + tuple([0.75]*(N_features-2))))
     labels.append(np.full((50,), 3))
     data = np.vstack(data)
     labels = np.concatenate(labels)
 
-    newData = 2*np.random.rand(10, 3)
-    plt.figure(figsize=(15, 9))
-    for label in np.unique(labels):
-        subData = data[labels == label]
-        plt.scatter(subData[:, 0], subData[:, 1])
-    plt.scatter(newData[:, 0], newData[:, 1], c='k', marker='x')
+    newData = np.random.rand(50, N_features)
+    newLabels = np.argmin(cdist(newData, classgs), axis=1)
+
+    def plotModelTrial(trainData, testData, trainLabels, testLabels, classgs):
+        plt.figure(figsize=(15, 9))
+        for label, c in zip(np.unique(trainLabels), 'rgby'):
+            subData = trainData[trainLabels == label]
+            subNewData = testData[testLabels == label]
+            plt.scatter(subData[:, 0], subData[:, 1], c=c, marker='+')
+            plt.scatter(subNewData[:, 0], subNewData[:, 1], c=c, marker='x')
+        # plt.scatter(classgs[:, 0], classgs[:, 1], c='k', marker='o')
+        plt.vlines(0.5, 0, 1, colors='k', linestyles='dashed')
+        plt.hlines(0.5, 0, 1, colors='k', linestyles='dashed')
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+        plt.xticks([i/4 for i in range(5)])
+        plt.yticks([i/4 for i in range(5)])
+        plt.grid('on')
+
+    plotModelTrial(data, newData, labels, newLabels, classgs)
     plt.show()
 
+    print(f"train dataset size: {data.shape}, test dataset size: {newData.shape}")
     for d in DISTANCE_METRICS:
         for v in VOTING:
             for w in WEIGHTS:
-                print(f"distance: {d}, voting: {v}, weights: {w}")
-                knn = kNNAlgorithm(metric=d, voting=v, weights=w)
-                pred_labels = knn.fit(data, labels).predict(newData)
-                print(pred_labels)
+                for m in DISTANCE_METHODS:
+                    print(f"distance: {d}, voting: {v}, weights: {w}, method {m}")
+                    knn = kNNAlgorithm(metric=d, voting=v, weights=w, method=m)
+                    pred_labels = knn.fit(data, labels).predict(newData)
+                    print(pred_labels)
