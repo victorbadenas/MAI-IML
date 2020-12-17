@@ -6,7 +6,7 @@ from sklearn.feature_selection import mutual_info_classif
 sys.path.append('src/')
 
 from utils import convertToNumpy, ndcorrelate
-
+import metrics
 eps = np.finfo(float).eps
 
 # distance metrics
@@ -131,18 +131,11 @@ class kNNAlgorithm:
 
     def _matricialDistanceMatrix(self, X):
         if self.metric == COSINE:
-            trainX = self.trainX * np.sqrt(self.w)[None, :]
-            X = X.copy() * np.sqrt(self.w)[None, :]
-            d = X@trainX.T / np.linalg.norm(trainX, axis=1)[None, :] / np.linalg.norm(X, axis=1, keepdims=True)
-            d = 1-d
-        else:
-            d = np.expand_dims(self.trainX, 1) - np.expand_dims(X, 0)
-            if self.metric == MINKOWSKI:
-                d = np.sum((self.w[None, None, :] * np.abs(d)**self.p), axis=2)**(1/self.p)
-            elif self.metric == EUCLIDEAN:
-                d = np.sqrt(np.sum(self.w[None, None, :] * d ** 2, axis=2))
-            d = d.T
-        return d
+            return metrics.cosineDistance(X, self.trainX, w=self.w)
+        elif self.metric == MINKOWSKI:
+            return metrics.minkowskiDistance(X, self.trainX, w=self.w, p=self.p)
+        elif self.metric == EUCLIDEAN:
+            return metrics.euclideanDistance(X, self.trainX, w=self.w)
 
     def _validateParameters(self):
         assert self.k > 0, f"n_neighbors must be positive, not \'{self.k}\'"
@@ -209,10 +202,10 @@ if __name__ == "__main__":
     plt.show()
 
     print(f"train dataset size: {data.shape}, test dataset size: {newData.shape}")
-    for d in [EUCLIDEAN]:
+    for d in DISTANCE_METRICS:
         for v in VOTING:
             for w in WEIGHTS:
-                for m in DISTANCE_METHODS:
+                for m in [MAT]:
                     print(f"distance: {d}, voting: {v}, weights: {w}, method {m}")
                     knn = kNNAlgorithm(metric=d, voting=v, weights=w, method=m)
                     pred_labels = knn.fit(data, labels).predict(newData)
