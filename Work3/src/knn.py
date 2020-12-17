@@ -136,15 +136,11 @@ class kNNAlgorithm:
             d = X@trainX.T / np.linalg.norm(trainX, axis=1)[None, :] / np.linalg.norm(X, axis=1, keepdims=True)
             d = 1-d
         else:
-            X = np.repeat(X[None, :], self.trainX.shape[0], axis=0)
-            trainX = np.repeat(np.expand_dims(self.trainX.copy(), 1), X.shape[1], axis=1)
-            weights = np.repeat(np.expand_dims(self.w.copy(), 0), X.shape[1], axis=0)
-            weights = np.repeat(np.expand_dims(weights, 0), X.shape[0], axis=0)
-            d = trainX - X
+            d = np.expand_dims(self.trainX, 1) - np.expand_dims(X, 0)
             if self.metric == MINKOWSKI:
-                d = np.sum((weights * np.abs(d)**self.p), axis=2)**(1/self.p)
+                d = np.sum((self.w[None, None, :] * np.abs(d)**self.p), axis=2)**(1/self.p)
             elif self.metric == EUCLIDEAN:
-                d = np.sqrt(np.sum(weights * d ** 2, axis=2))
+                d = np.sqrt(np.sum(self.w[None, None, :] * d ** 2, axis=2))
             d = d.T
         return d
 
@@ -213,7 +209,7 @@ if __name__ == "__main__":
     plt.show()
 
     print(f"train dataset size: {data.shape}, test dataset size: {newData.shape}")
-    for d in DISTANCE_METRICS:
+    for d in [EUCLIDEAN]:
         for v in VOTING:
             for w in WEIGHTS:
                 for m in DISTANCE_METHODS:
