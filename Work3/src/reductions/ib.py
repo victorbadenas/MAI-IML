@@ -18,7 +18,7 @@ def ib2(X, labels, rand=True):
     for idx, (x, label) in enumerate(zip(X[1:], labels[1:]), 1):
         distance = cdist(x[None, :], np.atleast_2d(X[CD]))
         closer_y_idx = np.argmin(distance)
-        if label != labels[closer_y_idx]:
+        if label != labels[CD][closer_y_idx]:
             CD.append(idx)
     return X[CD], labels[CD]
 
@@ -59,7 +59,7 @@ def ib3(X, labels, rand=True):
             sim_sort_idx = np.argsort(distance)
             y_min_idx = sim_sort_idx[-randomidx]
 
-        if label != labels[y_min_idx]:
+        if label != labels[CD][y_min_idx]:
             CD = np.append(CD, idx)
             classificationAttempts = np.append(classificationAttempts, np.array([0]))
             classificationPositive = np.append(classificationPositive, np.array([0]))
