@@ -133,7 +133,7 @@ class kNNAlgorithm:
         if self.metric == COSINE:
             return metrics.cosineDistance(X, self.trainX, w=self.w)
         elif self.metric == MINKOWSKI:
-            return metrics.minkowskiDistance(X, self.trainX, w=self.w, p=self.p)
+            return metrics.minkowskiDistance(X, self.trainX, w=self.w, p=1)
         elif self.metric == EUCLIDEAN:
             return metrics.euclideanDistance(X, self.trainX, w=self.w)
 
