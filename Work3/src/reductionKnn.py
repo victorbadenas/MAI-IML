@@ -3,7 +3,7 @@ sys.path.append('src/')
 
 from knn import kNNAlgorithm, DISTANCE_METRICS, VOTING, WEIGHTS
 from utils import convertToNumpy
-from reductions import ib2
+from reductions import ib2, enn
 
 IB2 = 'ib2'
 ENN_OPTION = 'enn'
@@ -38,7 +38,7 @@ class reductionKnnAlgorithm(kNNAlgorithm):
         if self.reduction == IB2:
             return ib2(X, y)
         elif self.reduction == ENN_OPTION:
-            return X, y
+            return enn(X, y)
         elif self.reduction == NONE:
             return X, y
 
