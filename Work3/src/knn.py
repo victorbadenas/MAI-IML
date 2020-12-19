@@ -82,6 +82,7 @@ class kNNAlgorithm:
         return self
 
     def _predict(self, X):
+        X = convertToNumpy(X)
         distanceMatrix = self._computeDistanceMatrix(X)
         knnIndexes = self._computeKNNIndex(distanceMatrix)
         knnLabels = self._extractLabels(knnIndexes)
