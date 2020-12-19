@@ -38,7 +38,7 @@ class reductionKnnAlgorithm(kNNAlgorithm):
         if self.reduction == IB2:
             return ib2(X, y)
         elif self.reduction == ENN_OPTION:
-            return enn(X, y)
+            return enn(X, y, n_neighbors=self.k)
         elif self.reduction == NONE:
             return X, y
 
