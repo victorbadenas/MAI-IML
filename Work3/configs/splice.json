@@ -1,0 +1,14 @@
+{
+    "dataset": "splice",
+    "knnparameters": {
+        "metric": "minkowski2",
+        "n_neighbors": 1,
+        "p": 2,
+        "voting": "sheppards",
+        "weights": "mutual_info"
+    },
+    "reduction": [ "ib2",
+        "fcnn",
+        "enn"
+    ]
+}

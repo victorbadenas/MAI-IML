@@ -1,0 +1,14 @@
+{
+    "dataset": "hypothyroid",
+    "knnparameters": {
+        "metric": "cosine",
+        "n_neighbors": 5,
+        "p": 2,
+        "voting": "majority",
+        "weights": "mutual_info"
+    },
+    "reduction": [ "ib2",
+        "fcnn",
+        "enn"
+    ]
+}
