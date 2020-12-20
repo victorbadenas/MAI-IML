@@ -19,7 +19,6 @@ def plotModelTrial(trainData, testData, trainLabels, testLabels, classgs):
         subNewData = testData[testLabels == label]
         plt.scatter(subData[:, 0], subData[:, 1], c=c, marker='+')
         plt.scatter(subNewData[:, 0], subNewData[:, 1], c=c, marker='x')
-    # plt.scatter(classgs[:, 0], classgs[:, 1], c='k', marker='o')
     plt.vlines(0.5, 0, 1, colors='k', linestyles='dashed')
     plt.hlines(0.5, 0, 1, colors='k', linestyles='dashed')
     plt.xlim(0, 1)

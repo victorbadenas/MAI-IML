@@ -60,11 +60,6 @@ def getFoldData(tenFold):
 
 
 def runkNN(xTrain, yTrain, xTest, yTest, parameters):
-    # start = time.time()
-    # yPred = kNNAlgorithm().fit(xTrain.to_numpy(), yTrain.to_numpy()).predict(xTest.to_numpy())
-    # efficiency = time.time() - start
-    # accuracy = accuracy_score(yTest, yPred)
-    # return accuracy, efficiency
     clf = GridSearchCV(kNNAlgorithm(), parameters, scoring='accuracy')
     clf.fit(xTrain.to_numpy(), yTrain.to_numpy())
 
@@ -122,18 +117,10 @@ def loopOverParameters(dataset, parameters):
     return results
 
 
-# NOTE: Sembla que si computo el GridSearch incloent tots els testos triga mil anys i per això està comentat
-# TODO: For the evaluation, you will use a T-Test or another statistical method (llegir paper T-Test)
-# NOTE 2: No sé si hi ha alguna manera d'extreure la metrica de 'temps' dins el GridSearch
 if __name__ == "__main__":
-    # datasets = [Path(path).stem for path in glob.glob("10fdatasets/*")]
     datasets = ['adult', 'audiology', 'autos', 'bal', 'connect-4', 'credit-a', 'grid',
                 'hepatitis', 'hypothyroid', 'kropt', 'kr-vs-kp', 'labor', 'mushroom', 'mx',
                 'nursery', 'pen-based', 'satimage', 'sick', 'soybean', 'splice', 'vote', 'vowel']  # all datasets
-    # runnable
-    # datasets = ['grid', "hypothyroid", "kr-vs-kp", "mx", "sick", 'splice']  # LARGE
-    # datasets = ['bal', 'credit-a', 'soybean', 'vowel']  # MEDIUM
-    # datasets = ["audiology", "autos", "labor", "vote"]  # SMALL
 
     set_logger(Path('log/bestKnn.log'), debug=True)
     resultsPath = Path('./results/best_knn')

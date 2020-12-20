@@ -1,8 +1,5 @@
 import numpy as np
 from scipy import stats
-# import plotly.plotly as py
-# import plotly.graph_objs as go
-# from plotly.tools import FigureFactory as FF
 import matplotlib.pyplot as plt
 import scipy
 

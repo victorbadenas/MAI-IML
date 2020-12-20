@@ -74,7 +74,6 @@ if __name__ == "__main__":
             subNewData = testData[testLabels == label]
             plt.scatter(subData[:, 0], subData[:, 1], c=c, marker='+')
             plt.scatter(subNewData[:, 0], subNewData[:, 1], c=c, marker='x')
-        # plt.scatter(classgs[:, 0], classgs[:, 1], c='k', marker='o')
         plt.vlines(0.5, 0, 1, colors='k', linestyles='dashed')
         plt.hlines(0.5, 0, 1, colors='k', linestyles='dashed')
         plt.xlim(0, 1)
@@ -83,12 +82,6 @@ if __name__ == "__main__":
         plt.yticks([i/4 for i in range(5)])
         plt.grid('on')
 
-    # plotModelTrial(data, newData, labels, newLabels, classgs)
-    # plt.show()
-
-    # for d in DISTANCE_METRICS:
-    #     for v in VOTING:
-    #         for w in WEIGHTS:
     for r in REDUCTION_METHODS:
         print(f"reduction: {r}")
         rknn = reductionKnnAlgorithm(reduction=r)
