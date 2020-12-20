@@ -87,7 +87,7 @@ def loopOverParameters(dataset, parameters, algorithm):
             foldIdx += 1
 
         for i, score in enumerate(accuracies):
-            result_dict[f'test_score_fold{i}'] = accuracy
+            result_dict[f'test_score_fold{i}'] = accuracies[i]
 
         result_dict['mean_fit_time'] = np.mean(fit_times)
         result_dict['std_fit_time'] = np.std(fit_times)
