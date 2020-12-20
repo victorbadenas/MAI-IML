@@ -6,10 +6,10 @@ from utils import convertToNumpy
 from reductions import ib2, enn, fcnn
 
 IB2 = 'ib2'
-ENN_OPTION = 'enn'
+ENN = 'enn'
 FCNN = 'fcnn'
 NONE = None
-REDUCTION_METHODS = [IB2, ENN_OPTION, FCNN, NONE]
+REDUCTION_METHODS = [IB2, ENN, FCNN, NONE]
 
 
 class reductionKnnAlgorithm(kNNAlgorithm):
@@ -38,8 +38,8 @@ class reductionKnnAlgorithm(kNNAlgorithm):
     def _reduceInstances(self, X, y):
         if self.reduction == IB2:
             return ib2(X, y)
-        elif self.reduction == ENN_OPTION:
-            return enn(X, y, n_neighbors=self.k)
+        elif self.reduction == ENN:
+            return enn(X, y, n_neighbors=self.k, metric=self.metric)
         elif self.reduction == FCNN:
             return fcnn(X, y)
         elif self.reduction == NONE:
