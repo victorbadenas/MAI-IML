@@ -10,7 +10,7 @@ def enn(X, y, **knnparams):
         knnparams['n_neighbors'] += 1
 
     nn = kNNAlgorithm(**knnparams).fit(X, y)
-    nnIndexes = nn._computeKNNIndex(nn._computeDistanceMatrix(X))
+    nnIndexes = nn._computeKNNIndex(nn.computeDistanceMatrix(X, nn.trainX, nn.w, nn.metric, nn.method))
     nnIndexes = nnIndexes[:, 1:]
     nnlabels = y[nnIndexes]
     yPred = nn._computeDecision(nnlabels, np.ones_like(nnlabels))

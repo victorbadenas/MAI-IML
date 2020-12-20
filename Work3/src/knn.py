@@ -83,7 +83,7 @@ class kNNAlgorithm:
 
     def _predict(self, X):
         X = convertToNumpy(X)
-        distanceMatrix = self._computeDistanceMatrix(X)
+        distanceMatrix = self.computeDistanceMatrix(X, self.trainX, self.w, self.metric, self.method)
         knnIndexes = self._computeKNNIndex(distanceMatrix)
         knnLabels = self._extractLabels(knnIndexes)
         decision = self._decide(knnLabels, distanceMatrix)
@@ -117,26 +117,29 @@ class kNNAlgorithm:
             knnIndex[i] = np.argsort(distanceMatrix[i, :])[:self.k]
         return np.vstack(knnIndex)
 
-    def _computeDistanceMatrix(self, X):
-        if self.method == MAT:
-            return self._matricialDistanceMatrix(X)
-        elif self.method == SCIPY:
-            return self._scipyDistanceMatrix(X)
+    @staticmethod
+    def computeDistanceMatrix(X, trainX, w, metric=MINKOWSKI, method=MAT):
+        if method == MAT:
+            return kNNAlgorithm._matricialDistanceMatrix(X, trainX, w, metric)
+        elif method == SCIPY:
+            return kNNAlgorithm._scipyDistanceMatrix(X, trainX, w, metric)
 
-    def _scipyDistanceMatrix(self, X):
-        if self.metric == EUCLIDEAN:
-            return cdist(X, self.trainX, metric=MINKOWSKI, p=2, w=self.w)
-        elif self.metric == MINKOWSKI:
-            return cdist(X, self.trainX, metric=MINKOWSKI, p=1, w=self.w)
-        return cdist(X, self.trainX, metric=self.metric, w=self.w)
+    @staticmethod
+    def _scipyDistanceMatrix(X, trainX, w, metric):
+        if metric == EUCLIDEAN:
+            return cdist(X, trainX, metric=MINKOWSKI, p=2, w=w)
+        elif metric == MINKOWSKI:
+            return cdist(X, trainX, metric=MINKOWSKI, p=1, w=w)
+        return cdist(X, trainX, metric=metric, w=w)
 
-    def _matricialDistanceMatrix(self, X):
-        if self.metric == COSINE:
-            return metrics.cosineDistance(X, self.trainX, w=self.w)
-        elif self.metric == MINKOWSKI:
-            return metrics.minkowskiDistance(X, self.trainX, w=self.w, p=1)
-        elif self.metric == EUCLIDEAN:
-            return metrics.euclideanDistance(X, self.trainX, w=self.w)
+    @staticmethod
+    def _matricialDistanceMatrix(X, trainX, w, metric):
+        if metric == COSINE:
+            return metrics.cosineDistance(X, trainX, w=w)
+        elif metric == MINKOWSKI:
+            return metrics.minkowskiDistance(X, trainX, w=w, p=1)
+        elif metric == EUCLIDEAN:
+            return metrics.euclideanDistance(X, trainX, w=w)
 
     def _validateParameters(self):
         assert self.k > 0, f"n_neighbors must be positive, not \'{self.k}\'"
