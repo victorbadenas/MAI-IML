@@ -1,7 +1,0 @@
-{
-    "path": "datasets/adult.arff",
-    "resultsDir": "results/adult",
-    "verbose": false,
-    "plotClusters": true,
-    "parameters": {}
-}
