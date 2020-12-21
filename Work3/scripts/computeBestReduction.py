@@ -58,6 +58,7 @@ def loopOverParameters(dataset, parameters, algorithm):
 
         logging.info(f"Now evaluating combination {paramIdx+1}/{len(parameterCombinations)}: {parameterdict}")
 
+        fit_accuracies = []
         accuracies = []
         fit_times = []
         score_times = []
@@ -69,9 +70,10 @@ def loopOverParameters(dataset, parameters, algorithm):
             xTrain, yTrain, xTest, yTest = getFoldData(tenFold)
 
             st = time.time()
-            knn = algorithm(**parameterdict).fit(xTrain.to_numpy(), yTrain.to_numpy())
+            knn = algorithm(**parameterdict)
+            trainLabels = knn.fit_predict(xTrain.to_numpy(), yTrain.to_numpy())
             trainTime = time.time() - st
-
+            trainAccuracy = np.average(trainLabels == yTrain)
             st = time.time()
             pred = knn.predict(xTest.to_numpy())
             testTime = time.time() - st
@@ -79,12 +81,16 @@ def loopOverParameters(dataset, parameters, algorithm):
             accuracy = np.average(pred == yTest)
             storage = getSizeOfObject(knn)
 
+            fit_accuracies.append(trainAccuracy)
             accuracies.append(accuracy)
             fit_times.append(trainTime)
             score_times.append(testTime)
             storages.append(storage)
 
             foldIdx += 1
+
+        for i, score in enumerate(fit_accuracies):
+            result_dict[f'train_score_fold{i}'] = fit_accuracies[i]
 
         for i, score in enumerate(accuracies):
             result_dict[f'test_score_fold{i}'] = accuracies[i]
@@ -94,6 +100,8 @@ def loopOverParameters(dataset, parameters, algorithm):
         result_dict['mean_score_time'] = np.mean(score_times)
         result_dict['std_score_time'] = np.std(score_times)
         result_dict['storage_mean'] = np.mean(storages)
+        result_dict['mean_fit_score'] = np.mean(fit_accuracies)
+        result_dict['std_fit_score'] = np.std(fit_accuracies)
         result_dict['mean_score'] = np.mean(accuracies)
         result_dict['std_score'] = np.std(accuracies)
 
@@ -115,7 +123,7 @@ if __name__ == "__main__":
 
     for dataset, parameters in zip(datasets, bestKNNparameters):
         try:
-            parameters['reduction'] = REDUCTION_METHODS
+            parameters['reduction'] = [None]
             results = loopOverParameters(dataset, parameters, reductionKnnAlgorithm)
             results.to_csv(resultsPath / f'{dataset}.tsv', sep='\t')
         except Exception as e:
