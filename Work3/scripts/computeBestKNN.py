@@ -118,7 +118,7 @@ def loopOverParameters(dataset, parameters):
 
 
 if __name__ == "__main__":
-    datasets = ['adult', 'audiology', 'autos', 'bal', 'connect-4', 'credit-a', 'grid',
+    datasets = ['audiology', 'autos', 'bal', 'credit-a', 'grid',
                 'hepatitis', 'hypothyroid', 'kropt', 'kr-vs-kp', 'labor', 'mushroom', 'mx',
                 'nursery', 'pen-based', 'satimage', 'sick', 'soybean', 'splice', 'vote', 'vowel']  # all datasets
 
